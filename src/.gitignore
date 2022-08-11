@@ -1,0 +1,24 @@
+# Devlopment Environment
+.vscode/
+.clangd/
+*.user
+.vs
+.idea
+launch.vs.json
+labproj.txt
+CMakeSettings.json
+
+dist/
+
+# CMake Cache
+out/
+build/
+CMakeFiles
+CMakeCache.txt
+CMakeScripts
+Testing
+Makefile
+cmake_install.cmake
+install_manifest.txt
+compile_commands.json
+CTestTestfile.cmake

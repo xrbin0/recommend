@@ -1,0 +1,2 @@
+vendor/* linguist-vendored=true
+conan.cmake linguist-vendored=true

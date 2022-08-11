@@ -1,0 +1,199 @@
+
+devalopment process：
+    construct a whole program CFG -> (2021-10-10 09:23:54)
+    construct a whole program VFG -> (2021-10-11 14:42:37)
+    whole program fs analysis -> ()
+    design a object-sensitivity model ->
+    backward analysis find all relevent lv, construct cs lv ->
+    cs fs analysis
+
+JAssignStmt:
+    Assign
+    Load
+    Store
+    Alloc
+    InvokeExpr
+        JSpecialInvokeExpr
+        JStaticInvokeExpr
+         same as JSpecialInvokeExpr and JVirtualInvokeExpr
+        JVirtualInvokeExpr
+        JDynamicInvokeExpr
+        JInterfaceInvokeExpr
+    JCastExpr
+    StaticFieldRef
+    ArrayRef
+
+JIdentityStmt:
+	class soot.jimple.internal.JimpleLocal	args
+	class soot.jimple.ParameterRef	@parameter0: java.lang.String[]
+
+JInvokeStmt:
+    JSpecialInvokeExpr
+    JStaticInvokeExpr
+    JVirtualInvokeExpr
+    JDynamicInvokeExpr
+    JInterfaceInvokeExpr
+
+JReturnStmt:
+
+
+
+2021-10-10 23:20:47: 修改java虚拟机可用内存大小，即将完成VFG部分。
+2021-10-11 14:37:57: 初步完成了VFG
+2021-10-13 23:40:31: 在debug，还差点东西；感觉没有充分的理论准备就下手会浪费很多时间debug。
+2021-10-16 23:08:47: 使用doop的对象上下文，没调好，需要生成带上下文的app vpt.
+2021-10-17 23:17:02: 使用doop的信息生成ivfg，然后在上面分析，企图复制doop的所有分析结果。
+2021-10-18 23:13:06: 在构建上下文敏感的全程序CFG，才刚开始。
+2021-10-19 23:07:50: 全都改好了，正在debug
+2021-10-26 17:20:38: 在增加 StaticFieldRef, 还有StaticInvoke以及ArrayRef.
+2021-10-26 23:02:02: 出bug了。
+2021-11-03 22:13:34: 优化了一点点，现在跑fop数据量超级大。
+2021-11-09 23:01:11: 修改了一些边边角角的bug.
+2021-11-09 23:01:11: 继续修复了一些边边角角的bug，java8版本不同导致行号对不上.
+2021-11-16 16:07:33: 在改执行流程，方便嵌入plugin.
+2021-11-18 22:32:28: 修改了Strong Upadte, 分析过程中的Strong Upadte有待改进。
+2021-11-22 22:50:06: 先改回没有ctx，还没改好。
+2021-11-23 22:21:52: 在改新的ctx
+2021-11-24 23:05:23: 正在实现callsite objContext-sensitivity
+2021-11-25 17:40:40: 改好了，但是有bug.
+2021-11-26 17:36:10: 改了些bug，但还是不行。
+2021-11-29 23:17:42: 还是在debug，bug在store和load，核心问题是Allocation的上下文没处理好。
+2021-11-30 09:54:30: debug, 先预处理了所有的allocation(NewExpr) 和 o.f的o的上下文。 ...
+2021-11-30 15:41:59: 初步完成，小样例能跑。
+2022-03-02 17:30:24: 域的精确值流生成放在后向分析之后
+2022-03-02 17:30:24: 对某些库函数直接跳过，并读取doop的分析结果
+2022-03-02 17:30:24: 后向分析增加CFL-R增加效率
+2022-03-22 10:38:10: 改了CFL-R的实现方式，实现了对库函数的隐藏。
+2022-03-22 23:12:31: clinit写到一半了。
+2022-04-05 19:36:59: 这个方法好像不会遇到，导致值流图生成没它的份，导致出错。
+
+TO DO: to be solve:
+静态字符串
+并没有完全复制doop的上下文敏感性，因为对象本身的上下文并没有完全复制过来。
+clinit: static variable init
+函数内的再一个{}内的临时变量不会保持原名
+2obj-cs: 两个context不会是同一个类的实例
+静态变量的初始化：
+    先遍历一遍所有clinit，然后把所有静态变量存下来，然后从程序入口dfs，给所有途经的静态变量加上值流。
+静态数组
+静态变量的值流没有cfg信息（2022-03-23）
+CallsiteContext 里的hashcode是直接返回0的，作为HashMap的key时效率会降低
+<<main method array content>> 还没处理
+$stack53 := @caughtexception; 还没处理
+有些doop能抵达的<方法>在这边不可达，有点奇怪
+
+vfg:
+ ---q--->:  1. JAssignStmt - JAssignStmt, JInvokeStmt, JReturnStmt
+            2. JIdentityStmt - JAssignStmt, JInvokeStmt, JReturnStmt
+            3. JReturnStmt - JAssignStmt=InvokeExpr
+            4. JInvokeStmt - JIdentityStmt
+
+ --q.f-->:  1. JAssignStmt=Load
+            2. JAssignStmt=Store
+
+back analysis:
+
+每一个调用: 都能找到对应的上下文
+obj上下文敏感，不仅和 a.f的a的指向有关系，还和a.f的位置有关系?
+在SSA的情况下，var虽然只在一个点被定值，但是有可能这个点执行了很多次。
+不同版本的java8有细微的差别，导致
+***** 由于种种原因，比如上下文不敏感等因素，导致程序遍历的时候出现出乎意料的结果，但其实是正常的。
+
+StaticFieldRef: no load, field field field, it is a field. is completely the same as instancefield
+
+bug:
+1. init 一定要init所有会用到的东西，否则会出现意想不到的问题
+2. a = b.f(), 可能有多个return指向a，全都要接收。
+3. 数组类型判断 - 提高精度
+4. java hashmap contains 先调用hashcode再调用equal: CallsiteContext里的equal被迫写得奇奇怪怪的，但是没改hashcode，导致出错。
+5. 并不是指针集有改变的点的所有后继都加入worklist，这样会把其余很多无关的点都拉进来。
+6. 同一个StaticFieldRef全局会有多个，作为map的key是不一样的，令人知悉，然后我统一转为String。
+7. (o3 = virtualinvoke i.<com.xrbin.ddptTest.test.ForFunc20: java.lang.Object getO()>(), null	<com.xrbin.ddptTest.test.test1: void func20()>/o3) 在原来的backanalysis中如果从这句开始，这个i就不会被加入vpt中。
+8. 也不知道为啥，test.test1里的func7自己单独求的时候是可以的，但是先求别的再求它就会求不到，匪夷所思。 -- solve，本来为了统一callsiteCTX 我在main前面加了个空函数，删了这部分之后就能正常运行了。
+9. specialinvoke this.<java.lang.Object: void <init>()>() 所有构造函数都会调用这个，导致所有构造函数都是可达的，但是只会给 调用这个函数 之后的语句生成值流
+10. constant作为函数参数
+    在VFGVALUE里面加了Constant，但是目前只处理了函数调用里面的参数传递，别的地方不知道还有没有使用这个的。
+11. 静态变量不能有上下文 - doop里面也是这样的
+12. u: a = b.f(p1); 在backAnalysis了里面，(u, b) 和 (u, p1)就应该一起加入到vpt中，如果在分析的时候才加入就有可能因为执行顺序的原因出错，比如b被改变了，但是由于库里没有(u, b)，等(u, b)被加入了之后，已经不会再有b的改变了。
+13. Constant 变量 可以直接 赋值给 staticFiled 和 instanceFile
+14. id(Wrong) -> <com.xrbin.ddptTest.test.Person: java.lang.String id>(Right), 原来Field类里面的String field设定不太正确
+15. Field 里面的 Allocation 可以是 null pesudo heap 导致出现奇怪的问题
+16. 所有的 <clinit> 尾部都应该接上main
+17. tails 里面居然有 Throw 震惊了。
+18. CallsiteCtx 那个版本里面返回值应该是没考虑 base 的指针集，会没那么精确。 in fact, it's a big bug.
+19. 构建WPCFG阶段总是随机性出错，总觉得有什么地方没处理好。
+20. 值流图上的 VFGValue 和 Locatepointer 上的 VFGValue 是两个不一样的东西，不能直接比较，前者无上下文，虽然使用了 alluse-context，但是使用Map等数据结构的时候是先调用hashcode。
+21. 不会出现 对象上下文连续两个一样的对象
+22. 对静态域的存储做了特殊处理，存的时候是带有上下文的，但是在vpt里面作为key的时候是不带上下文的
+23. 修改了doop中的变量转换过来的方式，展示给用户的和用于分析的是不太一样的
+24. doop命名 "/intermediate/"
+
+to be special:
+    <<null pseudo heap>>
+    <<string-builder>> - new StringBuilder
+
+To be optimized:
+    1. VFG - field usejudge, store all instance field use.
+    2. Analysis - strong update, rather than again and again.
+    3. CS -
+    4. ZIPPER -
+    5. worklist add - only add new object of lv and lv rather than lv.
+    6. solve lv one by one with data reverso
+    7. CFL reachability for Building VFG
+    8.
+
+strong update:
+    1. VFG: a.f = q; b.f = p; b -> one object o (note method args)
+    2. VFG: a.f = b; a.f = c; a is assigned in where?
+    3. ANALYSIS:
+        a.f = q; o.f
+        b.f = p;
+        if (b --only--> o) strong update
+        if (b -> objects) transmit pts of o.f
+
+objContext-sensitivity:
+    1. field and staticVariable -> initContext (2021-11-30 15:42:52 ×)
+    2. specially: invoke, identityStmt
+    3. callsite-sensitivity: 直接生成，应该要
+    4. methodCallUnit ->(getLineNumber) desMethods -> ctx
+
+
+code habits:
+    1. bugbug
+    2. wrong
+    3. is it?
+
+简化库代码 2022-02-16：
+    1. WCFG阶段 直接不深入(×2022-03-22)
+    2. IVFG阶段 也要取消函数的返回值的值流
+        直接在这两个阶段把方法抹去会导致如果这些方法中和没被抹去的方法调用了同样的方法，就会导致错误，
+        绕一圈还是会进入这些方法。
+    3. 分析阶段 碰到这些函数就直接用doop的结果
+
+    所有用到同一个类的方法都是会交织起来的，比如有很多地方都用到了HashMap, 这些地方就会交织起来。
+
+    bug1: 这个方法有可能会产生错误，被忽略的方法有可能会对对象的某些域进行了修改，但是忽略之后就没有这个修改了，显然是不太合适的。 2022-03-01
+
+    bug1解决方案：把所有相关的都全进来，并且使用doop的结果
+        方法调用 [域] [静态变量]
+        问题：
+            a() -> b() -> c() -> ...; d() -> e() -> c() -> ...; 若a被省略了，c还是有可能会被分析到，这应该没问题吧？
+
+
+        To Do:
+            1. 后向分析也可以进行判断，然后剪枝
+            2. 现在被省略的域直接用的域的指针集，其实可以用assignment的右边，但是得考虑些东西（不能直接continue）
+
+    bug2: 开始的时候我觉得只在store的时候读取doop的结果补全就可以了，但是有一种情况就是 load: q = this.f; load这个语句是会被分析的，但是
+        调用这个函数且穿一个对象给this的函数不一定会被分析，那么这个this在分析过程中可能就不会指向任何对象，这样这个q就不能分析得到正确的值。
+
+    bug3: 所有函数都会调用  specialinvoke this#_0.<java.lang.Object: void <init>()>(); 所以几乎所有的filed都会被算进去，
+        生成这些域的时候使用CFL-R: 遍历调用图的时候这么干似乎不太容易 - 其实也还行，因为不要求把所有路径都存下来，只需求可达的点就可以了。
+
+    bug4: 对于函数调用的返回值，如果直接读取的话，是一个不敏感的结果，这样就会导致大量的误报，如
+        "<org.apache.fop.fonts.truetype.TTFFile: void readKerning()>/u2_5"
+
+简化域的值流生成的过程：2022-05-03
+
+
+    目前的方法存在问题，没法做到和memSSA一样的精度

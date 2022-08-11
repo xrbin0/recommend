@@ -1,0 +1,17 @@
+
+
+针对insen和2obj之间的推荐和排序
+2022-00-00 搞了三种代码结构模式，推荐出来成千上万的变量和几十万的指向，效果倒是有
+2022-00-00 进一步精化每一种模式，但收效甚微
+2022-00-00 暴力(分组)筛选那些对程序影响指向很大的变量，筛选出二十多个，每个能自己有几百的指向，能干几万到十几万不等
+2022-00-00 着力于排序算法，排序算法有两个思路 1. 机器学习 2. 直接通过从变量的ivfg起点dfs估算它对整个分析的影响
+2022-00-00 遇到遍历结果都是同一个很大的数字，说明要将遍历的规则写得更详细
+2022-00-00 解决了一些soot读取源程序的bug(参考doop的facts生成)
+2022-07-19 缩减了遍历的规则之后还是有 遍历结果都是同一个很大的数字，再缩减了 参数传递 之后(这和一个方法被多次调用有关)效果好了些
+2022-07-20 AssignmentInvoke和InvokeStmt都要处理参数传递的问题，域的值流也限制了; return不能返回给InterfaceInvoke  -- 这些都不一定，能一定程度上提高准确度，但是效果有限。
+2022-07-24
+    先处理进一步处理 InterfaceInvoke
+        1. 两个被反馈变量可能会有联动
+            <java.util.Vector: java.lang.Object elementData(int)>/$stack3
+                <java.util.Collections: void reverse(java.util.List)>/java.util.ListIterator.previous/0	<java.util.ArrayList$ListItr: java.lang.Object previous()>
+                <java.util.Collections: void reverse(java.util.List)>/java.util.ListIterator.previous/0	<java.util.Vector$ListItr: java.lang.Object previous()>
