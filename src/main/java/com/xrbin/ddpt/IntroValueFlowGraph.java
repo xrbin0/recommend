@@ -1213,9 +1213,6 @@ public class IntroValueFlowGraph {
                 util.myprintln("------addEdge\t[" + wpCFG.getMethodOf(from) + ": " + from + "]\t->\t[" + wpCFG.getMethodOf(to) + ": " + to + "]: " + vv, StaticData.B, utils.BUILDVFG);
             }
         }
-//        util.plnG("------addEdge\t[" + from + "]\t->\t[" + to + "]: " + vv + "\n");
-//        utils.writeFile("------addEdge\t[" + from + "]\t->\t[" + to + "]: " + vv + "\n", "/Users/xrbin/Desktop/out/new");
-//        utils.writeFile("------addEdge\t[" + from + "]\t->\t[" + to + "]: " + vv + "\n", "/Users/xrbin/Desktop/out/old");
         vfgEdegs++;
 
         if (!unitToSuccs.containsKey(from)) {

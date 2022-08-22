@@ -1,697 +1,36 @@
-package com.xrbin.rc;
+package com.xrbin.rc.model;
 
-import com.xrbin.ddpt.IntroValueFlowGraph;
 import com.xrbin.ddpt.Main;
-import com.xrbin.ddpt.model.*;
+import com.xrbin.ddpt.model.Allocation;
+import com.xrbin.ddpt.model.DatabaseManager;
+import com.xrbin.ddpt.model.VFGvalue;
 import com.xrbin.ddpt.utils;
-import com.xrbin.rc.model.StoreInstanceField;
-import com.xrbin.utils.Statistics;
+import com.xrbin.rc.RecommendCtxSen;
 import com.xrbin.utils.util;
 import jas.Pair;
-import soot.*;
+import soot.Local;
+import soot.Unit;
+import soot.Value;
 import soot.jimple.*;
-import soot.jimple.internal.*;
+import soot.jimple.internal.JAssignStmt;
+import soot.jimple.internal.JIdentityStmt;
+import soot.jimple.internal.JInvokeStmt;
+import soot.jimple.internal.JReturnStmt;
 import soot.toolkits.graph.DirectedGraph;
 
-import java.io.*;
-import java.nio.charset.StandardCharsets;
+import java.io.BufferedReader;
+import java.io.FileReader;
+import java.io.IOException;
 import java.util.*;
 
-public class RecommendCtxSen {
+public class SortCtxSen {
     public static DatabaseManager database = DatabaseManager.getInstance();
-
-    public static Statistics stat = new Statistics();
     public static Vector<String> rcVar = new Vector<>();
-    public static HashSet<String> rcMethod = new HashSet<>();
-
-//    public static String projectName2Obj = "fop-2obj";
-//    public static String projectNameInsen = "fop-insen";
-//    public static String projectName2Obj = "DDPT-2obj";
-//    public static String projectNameInsen = "DDPT-insen";
-    public static String projectName2Obj = "jieba-2obj";
-    public static String projectNameInsen = "jieba-insen";
-//    public static String projectName2Obj = "paoding-2obj";
-//    public static String projectNameInsen = "paoding-insen";
-
-    public static String path = "/home/xrbin/Desktop/doophome/out/" + projectNameInsen + "/database/";
-
-    public static boolean flag_main = true;
-
-    static {
-        try {
-            Runtime.getRuntime().exec("rm logs/argDiff");
-        } catch (Exception e) {
-            System.err.print("");
-        }
-    }
-
-    public static void main(String[] args) {
-
-
-        try (
-                FileReader reader = new FileReader("/home/xrbin/Desktop/doophome/NVPT/NVPT0");
-                BufferedReader br = new BufferedReader(reader)
-        ) {
-            String line;
-            int i = 0;
-            while ((line = br.readLine()) != null) {
-                util.writeFileln(line, "/home/xrbin/Desktop/doophome/NVPT/NVPT" + (i++));
-            }
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-
-//        utils.JARPTAH = "/home/xrbin/Desktop/Java_Project/fop/build/fop.jar";
-//        utils.MAINCLASS = "org.apache.fop.cli.Main";
-//        utils.DATABASE = "/home/xrbin/Desktop/doophome/out/" + projectNameInsen + "/database/";
-
-        utils.JARPTAH = "/home/xrbin/Desktop/Java_Project/jieba-analysis-master/target/jieba-analysis-1.0.3-SNAPSHOT.jar";
-        utils.MAINCLASS = "com.qianxinyao.analysis.jieba.keyword.TFIDFAnalyzer";
-        utils.DATABASE = "/home/xrbin/Desktop/doophome/out/" + projectNameInsen + "/database/";
-
-//        utils.JARPTAH = "/home/xrbin/Desktop/Java_Project/DDPT_test/build/libs/all.jar";
-//        utils.MAINCLASS = "com.xrbin.ddptTest.test.test1";
-//        utils.DATABASE = "/home/xrbin/Desktop/doophome/out/all-2obj/" + "/database/";
-
-//        utils.JARPTAH = "/home/xrbin/Desktop/DDPT/build/libs/DDPT-1.0-SNAPSHOT.jar";
-//        utils.MAINCLASS = "com.Test";
-//        utils.DATABASE = "/home/xrbin/Desktop/doophome/out/" + projectNameInsen +"/database/";
-
-//        utils.JARPTAH = "/home/xrbin/Desktop/Java_Project/elasticsearch-analysis-paoding-master/target/elasticsearch-analysis-paoding-1.2.0.jar";
-//        utils.MAINCLASS = "net.paoding.analysis.analyzer.PaodingAnalyzer";
-//        utils.DATABASE = "/home/xrbin/Desktop/doophome/out/" + projectNameInsen +"/database/";
-
-//        appVarToFeedbacks();
-
-//        rc1();
-//        rc2();
-//        rc3();
-//        rc4();
-
-//        sort1("1");
-//        sort1("2");
-//        sort1("3");
-
-//        util1(1);
-//        util1(2);
-//        util1(3);
-
-//        spiltFile();
-//        vptSubVpt();
-//        sort1("");
-//        sort1("rc");
-
-//        sort1("");
-//        init();
-    }
-
-    public static void init() {
-
-        try {
-            Runtime.getRuntime().exec("rm logs/result_score");
-            Runtime.getRuntime().exec("rm logs/result_vptsize");
-        } catch (Exception e) {
-            System.err.print("");
-        }
-
-        Vector<String> r1 = new Vector<>();
-        Vector<String> r11 = new Vector<>();
-        Vector<String> r2 = new Vector<>();
-        Vector<String> r21 = new Vector<>();
-        Vector<String> r2_sort = new Vector<>();
-        try (
-                FileReader reader = new FileReader("/home/xrbin/Desktop/recommend/logs/appVarJieba");
-                BufferedReader br = new BufferedReader(reader)
-        ) {
-            String line;
-            while ((line = br.readLine()) != null) {
-                r1.add(line.split("\t")[0]);
-                r11.add(line.split("\t")[1]);
-            }
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-
-        try (
-                FileReader reader = new FileReader("/home/xrbin/Desktop/recommend/logs/recommendVarAndScore-rc");
-                BufferedReader br = new BufferedReader(reader)
-        ) {
-            String line;
-            while ((line = br.readLine()) != null) {
-                String num = line.split("\t")[1];
-                while (num.length() < 8) {
-                    num = "0".concat(num);
-                }
-                r2_sort.add(num + "\t" + line.split("\t")[0]);
-            }
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-
-        Collections.sort(r2_sort);
-        r2_sort.forEach(s -> {
-            r2.add(0, s.split("\t")[1]);
-            String num = s.split("\t")[0];
-            while (num.startsWith("0")) {
-                num = num.substring(1);
-            }
-            r21.add(0, num);
-        });
-
-        r2.forEach(r -> {
-            if (r1.contains(r)) {
-                int ir2 = r2.indexOf(r);
-                int ir1 = r1.indexOf(r);
-                util.writeFilelnWithPrefix(r + "\t" + ir2 + "\t" + ir1 + "\t" + r11.get(ir1) + "\t" + r21.get(ir2), "result_score");
-            }
-        });
-
-        r1.forEach(r -> {
-            if (r2.contains(r)) {
-                int ir2 = r2.indexOf(r);
-                int ir1 = r1.indexOf(r);
-                util.writeFilelnWithPrefix(r + "\t" + ir2 + "\t" + ir1 + "\t" + r11.get(ir1) + "\t" + r21.get(ir2), "result_vptsize");
-            }
-        });
-    }
-
-    public static void util1(int index) {
-        try (
-                FileReader reader = new FileReader(path + "VarPointsTo.csv");
-                BufferedReader br = new BufferedReader(reader)
-        ) {
-            String line;
-            while ((line = br.readLine()) != null) {
-                String[] sa = line.split("\t");
-                database.vptInsen.computeIfAbsent(sa[3], k -> new HashSet<>()).add(new Allocation(sa[1]));
-            }
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-
-        try (
-                FileReader reader = new FileReader("/home/xrbin/Desktop/doophome/out/" + projectName2Obj + "/database/VarPointsTo.csv");
-                BufferedReader br = new BufferedReader(reader)
-        ) {
-            String line;
-            while ((line = br.readLine()) != null) {
-                String[] sa = line.split("\t");
-                database.vptInsen.computeIfAbsent(sa[3], k -> new HashSet<>()).add(new Allocation(sa[1]));
-            }
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-
-        try (
-                FileReader reader = new FileReader("/home/xrbin/Desktop/recommend/logs/rc" + index);
-                BufferedReader br = new BufferedReader(reader)
-        ) {
-            String line;
-            while ((line = br.readLine()) != null) {
-//                System.out.println(line);
-                if (line.split("\t")[1].equals("0")) {
-//                    System.out.println(line.split("\t")[0] + "\t" + database.vptInsen.get(line.split("\t")[0]).size());
-                    util.writeFilelnWithPrefix(line.split("\t")[0] + "\t" + database.vptInsen.get(line.split("\t")[0]).size(), "nodiff-rc" + index);
-                }
-            }
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-    }
-
-    public static void rc1() {
-        try {
-            Runtime.getRuntime().exec("rm logs/rc1");
-            Runtime.getRuntime().exec("rm logs/recommendVar-rc1");
-            Runtime.getRuntime().exec("rm logs/recommendVarAndScore-rc1");
-        } catch (Exception e) {
-            System.err.print("");
-        }
-
-        if (flag_main) {
-            Main.run();
-            flag_main = false;
-        }
-        int count = 0;
-        /*
-        对于每个方法，先找到所有的调用点，如果被调用次数大于1（此处考虑上下文敏感，也就是base指向的对象的数量），被认为有可能有误报
-        这些方法中的每一个方法的参数，如果参数类型不是基本类型，那么认为这些参数都是有可能出现误报的
-         */
-        for (String m : database.cgEdge.keySet()) {
-//            if(database.appMethod.contains(m)) {
-//                System.out.println(m);
-            HashSet<Allocation> countBaseObject = new HashSet<>();
-            database.cgEdge.get(m).forEach(methodInvoke -> {
-//                    System.out.println("\t" + methodInvoke);
-                if (database.vpt2obj.containsKey(database.methodInvokeToBase.get(methodInvoke)))
-                    countBaseObject.addAll(database.vpt2obj.get(database.methodInvokeToBase.get(methodInvoke)));
-            });
-            // 方法被多次调用（对于对象上下文敏感来说，只要base指向的所有对象超过1就算）
-            if (countBaseObject.size() > 1) {
-//                    System.out.println("\t" + m);
-                count++;
-                rcMethod.add(m);
-            }
-//            }
-        }
-        System.out.println("count = " + count);
-
-        rcMethod.forEach(s -> {
-            if (Main.bodys.containsKey(s)) {
-                Body b = Main.bodys.get(s);
-                b.getParameterRefs().forEach(v -> {
-                    if (!utils.isPrimitiveType(v.getType())) {
-                        b.getUnits().forEach(u -> {
-                            if (u instanceof IdentityStmt && ((IdentityStmt) u).getRightOp().equals(v)) {
-//                                insenVpt.keySet().forEach(var -> {
-//                                    if((b.getMethod() + "/" + ((IdentityStmt) u).getLeftOp().toString()).equals(utils.processingName(var))) {
-//                                        rcVar.add(var);
-//                                    }
-//                                });
-                                if (database.nameToPname.containsKey((b.getMethod() + "/" + ((IdentityStmt) u).getLeftOp().toString()))) {
-                                    rcVar.add(database.nameToPname.get((b.getMethod() + "/" + ((IdentityStmt) u).getLeftOp().toString())));
-                                }
-                            }
-                        });
-                    }
-                });
-            }
-        });
-
-        rcVar.forEach(s -> {
-            util.writeFilelnWithPrefix(s, "recommendVar-rc1");
-        });
-
-        util.plnB("rcVar.size() = " + rcVar.size() + "");
-
-        rcVarToFeedbacks("/home/xrbin/Desktop/doophome/NVPT/NVPT1", "1");
-        sort1("1");
-    }
-
-    public static int countInvoke = 0;
-
-    public static void rc2() {
-        try {
-            Runtime.getRuntime().exec("rm logs/rc2");
-            Runtime.getRuntime().exec("rm logs/recommendVar-rc2");
-            Runtime.getRuntime().exec("rm logs/recommendVarAndScore-rc2");
-        } catch (Exception e) {
-            System.err.print("");
-        }
-
-        if (flag_main) {
-            Main.run();
-            flag_main = false;
-        }
-        /*
-            对于每个store，其所在的方法如果有多个上下文（根据callgraph和调用的点的base指向的对象的个数）
-         */
-//        for (Field key : database.storeToMethod.keySet()) {
-//            countInvoke = 0;
-//            String m = database.storeToMethod.get(key);
-//            if(database.cgEdge.containsKey(m)) {
-//                database.cgEdge.get(m).forEach(actualM -> {
-//                    if (database.vptInsen.containsKey(database.methodInvokeToBase.get(actualM))) {
-//                        countInvoke += database.vptInsen.get(database.methodInvokeToBase.get(actualM)).size();
-//                    }
-//                });
-//                if (countInvoke > 1) {
-////                    for (Field f : load.keySet()) {
-//                        if (load.containsKey(key)) {
-//                            rcVar.addAll(load.get(key));
-//                        }
-////                    }
-//                }
-//            }
-//        }
-
-        database.store.forEach(s -> {
-            countInvokeRc4 = 0;
-            String m = s.getMethod();
-            if (database.cgEdge.containsKey(m)) {
-                database.cgEdge.get(m).forEach(actualM -> {
-                    if (database.vptInsen.containsKey(database.methodInvokeToBase.get(actualM))) {
-                        countInvokeRc4 += database.vptInsen.get(database.methodInvokeToBase.get(actualM)).size();
-                    }
-                });
-                if (countInvokeRc4 > 1) {
-                    HashSet<Allocation> Os = database.vptInsen.get(s.getBase());
-                    if (Os != null) {
-                        for (Allocation o : Os) {
-                            Field f = new Field(new CSAllocation(o), s.getSignature());
-                            if (database.load.containsKey(f)) {
-                                rcVar.addAll(database.load.get(f));
-                            }
-                        }
-                    }
-                }
-            }
-
-        });
-
-        rcVar.forEach(s -> {
-            if (database.vptInsen.containsKey(s)) {
-//                util.writeFilelnWithPrefix(s, "recommendVar-rc2");
-//              util.plnG(s);
-            }
-            util.writeFilelnWithPrefix(s, "recommendVar-rc2");
-        });
-
-        util.plnB("rcVar.size() = " + rcVar.size() + "");
-
-        rcVarToFeedbacks("/home/xrbin/Desktop/doophome/NVPT/NVPT2", "2");
-        sort1("2");
-    }
-
-    public static void rc3() {
-        try {
-            Runtime.getRuntime().exec("rm logs/rc3");
-            Runtime.getRuntime().exec("rm logs/recommendVar-rc3");
-            Runtime.getRuntime().exec("rm logs/recommendVarAndScore-rc3");
-        } catch (Exception e) {
-            System.err.print("");
-        }
-
-        if(flag_main) {
-            Main.run();
-            flag_main = false;
-        }
-        /*
-        对于所有被多次调用的方法的调用点接收返回值的变量 -> a = b.f()中的a
-         */
-
-        int count = 0;
-        for (String m : database.cgEdge.keySet()) {
-//            if(database.appMethod.contains(m)) {
-//                System.out.println(m);
-            HashSet<Allocation> countBaseObject = new HashSet<>();
-            database.cgEdge.get(m).forEach(methodInvoke -> {
-//                    System.out.println("\t" + methodInvoke);
-                if (database.vpt2obj.containsKey(database.methodInvokeToBase.get(methodInvoke)))
-                    countBaseObject.addAll(database.vpt2obj.get(database.methodInvokeToBase.get(methodInvoke)));
-            });
-            // 方法被多次调用（对于对象上下文敏感来说，只要base指向的所有对象超过1就算）
-            if (countBaseObject.size() > 1) {
-//                System.out.println("\t" + m);
-                count++;
-                database.cgEdge.get(m).forEach(methodInvoke -> {
-                    if (database.vpt2obj.containsKey(database.methodInvokeToBase.get(methodInvoke))) {
-                        rcVar.add(database.assignReturnValue.get(methodInvoke));
-                    }
-                });
-            }
-//            }
-        }
-        System.out.println("count = " + count);
-
-        rcVar.forEach(s -> {
-            util.writeFilelnWithPrefix(s, "recommendVar-rc3");
-        });
-
-        util.plnB("rcVar.size() = " + rcVar.size() + "");
-
-        rcVarToFeedbacks("/home/xrbin/Desktop/doophome/NVPT/NVPT3", "3");
-        sort1("3");
-    }
-
-    public static int countBaseObj = 0;
-    public static int countInvokeRc4 = 0;
-
-    public static void rc4() {
-        try {
-            Runtime.getRuntime().exec("rm logs/rc4");
-            Runtime.getRuntime().exec("rm logs/recommendVar-rc4");
-            Runtime.getRuntime().exec("rm logs/recommendVarAndScore-rc4");
-        } catch (Exception e) {
-            System.err.print("");
-        }
-
-        if (flag_main) {
-            Main.run();
-            flag_main = false;
-        }
-        /*
-        对于每个store，其所在的方法如果有多个上下文（根据callgraph和调用的点的base指向的对象的个数）
-        store的base和methodInvoke的base是否一样
-         */
-
-
-        if (false) {
-            for (String m : database.cgEdge.keySet()) {
-                indexToArg = new HashMap<>();
-                HashSet<Allocation> countBaseObject = new HashSet<>();
-                database.cgEdge.get(m).forEach(methodInvoke -> {
-                    if (database.vpt2obj.containsKey(database.methodInvokeToBase.get(methodInvoke))) {
-                        if (countBaseObject.addAll(database.vpt2obj.get(database.methodInvokeToBase.get(methodInvoke)))) {
-                            countBaseObj++;
-                        }
-                    }
-                });
-                if (countBaseObj > 1) {
-                    Body b = Main.wpCFG.getBodys().get(m);
-                    if (b == null) continue;
-
-                    if (database.cgEdge.containsKey(m)) {
-                        database.cgEdge.get(m).forEach(invokeIntr -> {
-                            if (database.actualParam.containsKey(invokeIntr)) {
-                                database.actualParam.get(invokeIntr).keySet().forEach(i ->
-                                        indexToArg.computeIfAbsent(i, k -> new HashSet<>()).add(database.actualParam.get(invokeIntr).get(i))
-                                );
-                            }
-                        });
-                    }
-
-
-                    boolean flag;
-                    for (String key : indexToArg.keySet()) {
-                        flag = false;
-                        for (String arg1 : indexToArg.get(key)) {
-                            for (String arg2 : indexToArg.get(key)) {
-                                if (database.vptInsen.containsKey(arg1) && database.vptInsen.containsKey(arg2)) {
-                                    if (!arg1.equals(arg2)) {
-                                        if (database.vptInsen.get(arg1).size() == database.vptInsen.get(arg2).size()) {
-                                            for (Allocation o : database.vptInsen.get(arg1)) {
-                                                if (!database.vptInsen.get(arg2).contains(o)) {
-                                                    flag = true;
-                                                }
-                                            }
-                                            if (!flag) {
-                                                for (Allocation o : database.vptInsen.get(arg2)) {
-                                                    if (!database.vptInsen.get(arg1).contains(o)) {
-                                                        flag = true;
-                                                    }
-                                                }
-                                            }
-                                            if (flag) {
-                                                for (Unit u : b.getUnits()) {
-                                                    if (u instanceof IdentityStmt && u.toString().contains("@parameter" + key)
-                                                            && !utils.isPrimitiveType(((IdentityStmt) u).getRightOp().getType())
-                                                    ) {
-//                                                        System.out.println("-------\t" + m + "\t" + u);
-//                                                        System.out.println("-------\t\t" + arg1);
-//                                                        System.out.println("-------\t\t" + arg2);
-                                                        dfsRc4(u);
-                                                        break;
-                                                    }
-                                                }
-                                                break;
-                                            }
-                                        }
-                                    }
-                                }
-                            }
-                            if (flag) break;
-                        }
-                        if (flag) break;
-                    }
-
-//                rcMethod.add(m);
-//                if(rcMethod.size() > 100) return;
-                }
-            }
-        }
-
-
-        if (true) {
-
-            int count = 0;
-            for (String m : database.cgEdge.keySet()) {
-                HashSet<Allocation> countBaseObject = new HashSet<>();
-                database.cgEdge.get(m).forEach(methodInvoke -> {
-                    if (database.vpt2obj.containsKey(database.methodInvokeToBase.get(methodInvoke)))
-                        countBaseObject.addAll(database.vpt2obj.get(database.methodInvokeToBase.get(methodInvoke)));
-                });
-                if (countBaseObject.size() > 1) {
-                    count++;
-                    rcMethod.add(m);
-                }
-            }
-            System.out.println("count = " + count);
-
-            rcMethod.forEach(s -> {
-                if (Main.bodys.containsKey(s)) {
-                    Body b = Main.bodys.get(s);
-                    b.getParameterRefs().forEach(v -> {
-                        if (!utils.isPrimitiveType(v.getType())) {
-                            b.getUnits().forEach(u -> {
-                                if (u instanceof IdentityStmt && ((IdentityStmt) u).getRightOp().equals(v)) {
-//                                insenVpt.keySet().forEach(var -> {
-//                                    if((b.getMethod() + "/" + ((IdentityStmt) u).getLeftOp().toString()).equals(utils.processingName(var))) {
-//                                        rcVar.add(var);
-//                                    }
-//                                });
-                                    if (database.nameToPname.containsKey((b.getMethod() + "/" + ((IdentityStmt) u).getLeftOp().toString()))) {
-                                        rcVar.add(database.nameToPname.get((b.getMethod() + "/" + ((IdentityStmt) u).getLeftOp().toString())));
-                                    }
-                                }
-                            });
-                        }
-                    });
-                }
-            });
-
-            database.store.forEach(s -> {
-                if (s.getBase().contains("this#_0") || s.getBase().contains("l0#_0")) {
-                    countInvokeRc4 = 0;
-                    String m = s.getMethod();
-                    if (database.cgEdge.containsKey(m) && rcMethod.contains(m)) {
-                        if (args(m)) {
-                            System.out.println("yes\t\t" + m);
-                            database.cgEdge.get(m).forEach(actualM -> {
-                                if (database.vptInsen.containsKey(database.methodInvokeToBase.get(actualM))) {
-                                    countInvokeRc4 += database.vptInsen.get(database.methodInvokeToBase.get(actualM)).size();
-                                }
-                            });
-                            if (countInvokeRc4 > 1 && database.vptInsen.containsKey(s.getBase()) && database.vptInsen.get(s.getBase()).size() > 1) {
-                                HashSet<Allocation> Os = database.vptInsen.get(s.getBase());
-                                if (Os != null) {
-                                    for (Allocation o : Os) {
-                                        Field f = new Field(new CSAllocation(o), s.getSignature());
-                                        util.writeFilelnWithPrefix(s + "\n\t" + f + "\n\t" + database.load.get(f), "sToL");
-                                        if (database.load.containsKey(f)) {
-                                            rcVar.addAll(database.load.get(f));
-                                        }
-                                    }
-                                }
-                            }
-
-                        }
-                        else {
-                            System.out.println("no\t\t" + m);
-                        }
-                    }
-                }
-            });
-        }
-
-        rcVar.forEach(s -> {
-            if (database.vptInsen.containsKey(s)) {
-                util.writeFilelnWithPrefix(s, "recommendVar-rc4");
-            }
-        });
-
-        util.plnB("rc4Count = " + rc4Count + "");
-        util.plnB("rcVar.size() = " + rcVar.size() + "");
-        util.plnB("rcMethod.size() = " + rcMethod.size() + "");
-
-        rcVarToFeedbacks("/home/xrbin/Desktop/doophome/NVPT/NVPT4", "4");
-        sort1("4");
-    }
-
-    public static boolean res = false;
-    public static HashMap<String, HashSet<String>> indexToArg = new HashMap<>();
-
-    public static boolean args(String m) {
-        res = false;
-        indexToArg = new HashMap<>();
-        if (database.cgEdge.containsKey(m)) {
-            database.cgEdge.get(m).forEach(invokeIntr -> {
-                if (database.actualParam.containsKey(invokeIntr)) {
-                    database.actualParam.get(invokeIntr).keySet().forEach(i ->
-                            indexToArg.computeIfAbsent(i, k -> new HashSet<>()).add(database.actualParam.get(invokeIntr).get(i))
-                    );
-                }
-            });
-        }
-
-        for (String key : indexToArg.keySet()) {
-            for (String arg1 : indexToArg.get(key)) {
-                for (String arg2 : indexToArg.get(key)) {
-                    if (database.vptInsen.containsKey(arg1) && database.vptInsen.containsKey(arg2)) {
-                        if (!arg1.equals(arg2)) {
-                            if (database.vptInsen.get(arg1).size() == database.vptInsen.get(arg2).size()) {
-                                for (Allocation o : database.vptInsen.get(arg1)) {
-                                    if (!database.vptInsen.get(arg2).contains(o)) {
-                                        util.writeFilelnWithPrefix(m + "\n\t" + arg1 + "\n\t" + arg2, "argDiff");
-                                        return true;
-                                    }
-                                }
-                                for (Allocation o : database.vptInsen.get(arg2)) {
-                                    if (!database.vptInsen.get(arg1).contains(o)) {
-                                        util.writeFilelnWithPrefix(m + "\n\t" + arg1 + "\n\t" + arg2, "argDiff");
-                                        return true;
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-        }
-        return res;
-    }
-
-    public static int rc4Count = 0;
-
-    public static void dfsRc4(Unit root) {
-        rc4Count++;
-        IntroValueFlowGraph ivfg = Main.ivfg;
-        Stack<Unit> s = new Stack<>();
-        HashSet<Unit> color = new HashSet<>();
-        SootMethod sm = Main.wpCFG.getMethodOf(root);
-
-        s.push(root);
-        if (sm != null) {
-            while (!s.empty()) {
-                Unit u = s.pop();
-                if (color.add(u)) {
-//                if (color.add(u) && Main.wpCFG.getMethodOf(u).equals(sm)) {
-                    ivfg.getSuccs(u).forEach(succ -> {
-                        if (succ instanceof AssignStmt && ((AssignStmt) succ).getLeftOp() instanceof InstanceFieldRef) {
-                            InstanceFieldRef ifr = (InstanceFieldRef) ((AssignStmt) succ).getLeftOp();
-                            String var = Main.wpCFG.getMethodOf(u).toString() + "/" + ifr.getBase().toString();
-                            if (database.vptInsen.containsKey(var)) {
-                                for (Allocation o : database.vptInsen.get(var)) {
-                                    Field f = new Field(new CSAllocation(o), ifr.getField().toString());
-                                    if (database.load.containsKey(f)) {
-                                        rcVar.addAll(database.load.get(f));
-                                    }
-                                }
-                            }
-                        }
-                        s.add(succ);
-                    });
-                }
-            }
-        }
-    }
 
     public static boolean sort1Flag = false;
     public static String curVar = "";
     public static String curRcVar = "";
-    public static Integer[] curVars = { 125,
-            99,
-            77,
-            63,
-            96,
-            57,
-            97,
-            98,
-            100,
-            101,
-            102,
-            114,
-    };
+    public static Integer[] curVars = { 125, 99, 77, 63, 96, 57, 97, 98, 100, 101, 102, 114,};
     public static HashSet<String> curVarsSet = new HashSet<>();
     public static HashMap<String, Integer> rcVarToInteger = new HashMap<>();
     public static void sort1(String rc) {
@@ -705,9 +44,9 @@ public class RecommendCtxSen {
             System.err.print("");
         }
 
-        if (flag_main) {
+        if (RecommendCtxSen.flag_main) {
             Main.run();
-            flag_main = false;
+            RecommendCtxSen.flag_main = false;
         }
 
         try (
@@ -1158,8 +497,8 @@ public class RecommendCtxSen {
         }
     }
 
-    public static int invokeThisDiffVpt(InstanceInvokeExpr v, Unit succ) {
-        if (true) return 0;
+    public static void invokeThisDiffVpt(InstanceInvokeExpr v, Unit succ) {
+        if (true) return;
         int res = 0;
         Value vvvvvv = ((IdentityStmt) succ).getLeftOp();
         boolean out = false;
@@ -1206,11 +545,9 @@ public class RecommendCtxSen {
                 dfsStack.push(new Pair<>(succ, new VFGvalue(vvvvvv)));
             }
         }
-
-        return res;
     }
 
-    public static int invokeArgDiffVpt(InstanceInvokeExpr v, Unit succ) {
+    public static void invokeArgDiffVpt(InstanceInvokeExpr v, Unit succ) {
         int res = 0;
         Value vvvvvv = ((IdentityStmt) succ).getLeftOp();
         boolean out = false
@@ -1229,7 +566,7 @@ public class RecommendCtxSen {
             }
             index++;
         }
-        if(!succ.toString().contains("@parameter" + index)) return 0;
+        if(!succ.toString().contains("@parameter" + index)) return ;
 
         if (out) System.out.println("" + "\tindex = " + index);
 
@@ -1274,10 +611,9 @@ public class RecommendCtxSen {
             }
         }
 
-        return res;
     }
 
-    public static int invokeArgDiffVpt(StaticInvokeExpr v, Unit succ) {
+    public static void invokeArgDiffVpt(StaticInvokeExpr v, Unit succ) {
         int res = 0;
         Value vvvvvv = ((IdentityStmt) succ).getLeftOp();
         boolean out = false;
@@ -1295,7 +631,7 @@ public class RecommendCtxSen {
             }
             index++;
         }
-        if(!succ.toString().contains("@parameter" + index)) return 0;
+        if(!succ.toString().contains("@parameter" + index)) return;
         if (out) System.out.println("" + "\tindex = " + index);
 
         if (!predRetVar.equals("") && database.vptInsen.containsKey(predRetVar)) {
@@ -1339,7 +675,6 @@ public class RecommendCtxSen {
             }
         }
 
-        return res;
     }
 
     public static int unitToVarToVPTSize(Unit u) {
@@ -1441,168 +776,5 @@ public class RecommendCtxSen {
                 util.writeFilelnWithPrefix("=====" + "\t" + Main.wpCFG.getMethodOf(u) + "\t" + u, "ivfgDfs" + rcVarToInteger.get(curRcVar));
             }
         }
-    }
-
-    public static void spiltFile() {
-
-//        String inputFile = "/home/xrbin/Desktop/recommend/logs/recommendVar-rc";
-        String inputFile = "/home/xrbin/Desktop/recommend/logs/backup/appVarJiebaGood";
-        String outputDir = "/home/xrbin/Desktop/doophome/NVPT/";
-        int interval = 10000;
-        DatabaseManager.getInstance().readData();
-
-        try (
-                FileReader reader = new FileReader(inputFile);
-                BufferedReader br = new BufferedReader(reader)
-        ) {
-            String line;
-            int i = 0;
-            int fileIndex = 0;
-            rcVar = new Vector<>();
-            while ((line = br.readLine()) != null) {
-                rcVar.add(line);
-                if (++i == interval) {
-                    rcVarToFeedbacks(outputDir + "NVPT" + fileIndex, "0");
-                    rcVar = new Vector<>();
-                    i = 0;
-                    fileIndex++;
-                }
-            }
-            rcVarToFeedbacks(outputDir + "NVPT" + fileIndex, "0");
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-    }
-
-    public static int countt = 0;
-    public static int counttAll = 0;
-    public static int counttAllPred = 0;
-
-    public static void rcVarToFeedbacks(String outputFile, String rc) {
-        try {
-            File file = new File(outputFile);
-            FileOutputStream fos = new FileOutputStream(file);
-            OutputStreamWriter osw = new OutputStreamWriter(fos, StandardCharsets.UTF_8);//指定以UTF-8格式写入文件
-            rcVar.forEach(var -> {
-                if (database.vptInsen.containsKey(var) && database.vpt2obj.containsKey(var)) {
-                    database.vptInsen.get(var).forEach(a -> {
-                        if (!database.vpt2obj.get(var).contains(a)) {
-                            try {
-                                countt++;
-                                counttAll++;
-                                osw.write(a + "\t" + var + "\n");
-                            } catch (Exception e) {
-                                System.err.println();
-                            }
-                        }
-                        else {
-//                            util.writeFilelnWithPrefix("var -> allo: " + var + " -> " + a, "0");
-                        }
-                    });
-//                    System.out.println("var = " + var + ": " + countt);
-//                    util.writeFilelnWithPrefix(var + "\t" + countt, "rc" + rc);
-                    countt = 0;
-                }
-                else {
-//                    System.out.println("-=-=no var = " + var);
-                }
-            });
-            osw.close();
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-//        System.out.println("counttAll = " + counttAll);
-//        System.out.println("counttAll - counttAllPred = " + (counttAll - counttAllPred));
-//        System.out.println((counttAll - counttAllPred));
-        util.writeFileln((counttAll - counttAllPred) + "", "/home/xrbin/Desktop/doophome/NVPT/fbNum");
-        counttAllPred = counttAll;
-    }
-
-    public static void appVarToFeedbacks() {
-
-        try (
-                FileReader reader = new FileReader(path + "AVPT.csv");
-                BufferedReader br = new BufferedReader(reader)
-        ) {
-            String line;
-            while ((line = br.readLine()) != null) {
-//                System.out.println(line);
-                String[] sa = line.split("\t");
-                database.appInsenVpt.computeIfAbsent(sa[3], k -> new HashSet<>()).add(new Allocation(sa[1]));
-            }
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-
-        try (
-                FileReader reader = new FileReader("/home/xrbin/Desktop/doophome/out/" + projectName2Obj + "/database/AVPT.csv");
-                BufferedReader br = new BufferedReader(reader)
-        ) {
-            String line;
-            while ((line = br.readLine()) != null) {
-//                System.out.println(line);
-                String[] sa = line.split("\t");
-                database.appVpt2Obj.computeIfAbsent(sa[3], k -> new HashSet<>()).add(new Allocation(sa[1]));
-            }
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-
-//        try {
-//            File file = new File("/home/xrbin/Desktop/doophome/NVPT/NVPT0");
-//            FileOutputStream fos = new FileOutputStream(file);
-//            OutputStreamWriter osw = new OutputStreamWriter(fos, StandardCharsets.UTF_8);//指定以UTF-8格式写入文件
-//            database.appInsenVpt.keySet().forEach(var -> {
-//                if (database.appVpt2Obj.containsKey(var)) {
-//                    database.appInsenVpt.get(var).forEach(o -> {
-//                        if (!database.appVpt2Obj.get(var).contains(o)) {
-//                            try {
-//                                System.out.println(o + "\t" + var + "\n");
-//                                osw.write(o + "\t" + var + "\n");
-//                            } catch (Exception e) {
-//                                System.out.print("");
-//                            }
-//                        }
-//                    });
-//                }
-//            });
-//            osw.close();
-//        } catch (Exception e) {
-//            e.printStackTrace();
-//        }
-
-        database.appInsenVpt.keySet().forEach(var -> {
-            if (database.appVpt2Obj.containsKey(var)) {
-                util.writeFilelnWithPrefix(var, "appVarFop");
-                util.writeFilelnWithPrefix(var + "\t" + database.appInsenVpt.get(var).size(), "appVarVptSizeFop");
-            }
-        });
-    }
-
-    public static int countVptDiff = 0;
-    public static void vptSubVpt() {
-
-        try {
-            Runtime.getRuntime().exec("rm logs/jieba/vptDiff");
-            Runtime.getRuntime().exec("rm logs/jieba/vptDiffNumber");
-        } catch (Exception e) {
-            System.err.print("");
-        }
-
-        database.vptInsen.forEach((var, os) -> {
-            if (database.vpt2obj.containsKey(var)) {
-                countVptDiff = 0;
-                os.forEach(o -> {
-                    if (!database.vpt2obj.get(var).contains(o)) {
-                        util.writeFilelnWithPrefix(var + "\t" + o, "/jieba/vptDiff");
-                        countVptDiff++;
-                    }
-                });
-                if (countVptDiff != 0) {
-                    util.writeFilelnWithPrefix(var + "\t" + countVptDiff, "/jieba/vptDiffNumber");
-                }
-            }
-        });
-
     }
 }

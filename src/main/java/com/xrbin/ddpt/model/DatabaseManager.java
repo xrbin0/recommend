@@ -106,20 +106,20 @@ public class DatabaseManager {
             e.printStackTrace();
         }
 
-        util.getTime("appVpt2Obj");
-        try (
-                FileReader reader = new FileReader("/home/xrbin/Desktop/doophome/out/" + RecommendCtxSen.projectName2Obj + "/database/AVPT.csv");
-                BufferedReader br = new BufferedReader(reader)
-        ) {
-            String line;
-            while ((line = br.readLine()) != null) {
-//                System.out.println(line);
-                String[] sa = line.split("\t");
-                appVpt2Obj.computeIfAbsent(sa[3], k -> new HashSet<>()).add(new Allocation(sa[1]));
-            }
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
+//        util.getTime("appVpt2Obj");
+//        try (
+//                FileReader reader = new FileReader("/home/xrbin/Desktop/doophome/out/" + RecommendCtxSen.projectName2Obj + "/database/AVPT.csv");
+//                BufferedReader br = new BufferedReader(reader)
+//        ) {
+//            String line;
+//            while ((line = br.readLine()) != null) {
+////                System.out.println(line);
+//                String[] sa = line.split("\t");
+//                appVpt2Obj.computeIfAbsent(sa[3], k -> new HashSet<>()).add(new Allocation(sa[1]));
+//            }
+//        } catch (IOException e) {
+//            e.printStackTrace();
+//        }
 
         util.getTime("vptInsen");
         try (
