@@ -43,15 +43,15 @@ public class Test {
         utils.STRONGUPDATE = false;
         utils.RESULT = false;
 
-        utils.JARPTAH = "/home/xrbin/Desktop/Java_Project/fop/build/fop.jar";
+        utils.JARPTAH = "/home/xrbin/Java_Project/fop/build/fop.jar";
         utils.MAINCLASS = "org.apache.fop.cli.Main";
         utils.DATABASE = utils.DOOPWORKPLACE + "/out/fop/" + "/database/";
 
-        utils.JARPTAH = "/home/xrbin/Desktop/Java_Project/jieba-analysis-master/target/jieba-analysis-1.0.3-SNAPSHOT.jar";
+        utils.JARPTAH = "/home/xrbin/Java_Project/jieba-analysis-master/target/jieba-analysis-1.0.3-SNAPSHOT.jar";
         utils.MAINCLASS = "com.qianxinyao.analysis.jieba.keyword.TFIDFAnalyzer";
-        utils.DATABASE = "/home/xrbin/Desktop/doophome/out/" + "jieba-2obj" +"/database/";
+        utils.DATABASE = "/home/xrbin/doophome/out/" + "jieba-2obj" +"/database/";
 
-        utils.JARPTAH = "/home/xrbin/Desktop/Java_Project/DDPT_test/build/libs/all.jar";
+        utils.JARPTAH = "/home/xrbin/Java_Project/DDPT_test/build/libs/all.jar";
         utils.MAINCLASS = "com.xrbin.ddptTest.test.test1";
         utils.DATABASE = utils.DOOPWORKPLACE + "/out/all/" + "/database/";
 
@@ -174,7 +174,7 @@ public class Test {
 
     private static void testFile() {
         try (
-                FileReader reader = new FileReader("/home/xrbin/Desktop/DDPT/logs/recommendVar_v0");
+                FileReader reader = new FileReader("/home/xrbin/IdeaProjects/DDPT/logs/recommendVar_v0");
                 BufferedReader br = new BufferedReader(reader)
         ) {
             String line;

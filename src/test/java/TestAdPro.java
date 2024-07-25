@@ -10,7 +10,7 @@ import java.util.zip.ZipFile;
 
 public class TestAdPro {
     public static void main(String[] args) {
-        String path = "/home/xrbin/Desktop/share/高程项目一1/";
+        String path = "/home/xrbin//share/高程项目一1/";
         File file = new File(path);
         File[] fs = file.listFiles();
         int i = 0;

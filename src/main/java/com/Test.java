@@ -47,7 +47,7 @@ public class Test {
         utils.STRONGUPDATE = false;
         utils.RESULT = false;
 
-        utils.JARPTAH = "/home/xrbin/Desktop/Java_Project/fop/build/fop.jar";
+        utils.JARPTAH = "/home/xrbin/Java_Project/fop/build/fop.jar";
         utils.MAINCLASS = "org.apache.fop.cli.Main";
         utils.DATABASE = utils.DOOPWORKPLACE + "/out/fop/" + "/database/";
 
@@ -170,7 +170,7 @@ public class Test {
 
     private static void testFile() {
         try (
-                FileReader reader = new FileReader("/home/xrbin/Desktop/DDPT/logs/recommendVar_v0");
+                FileReader reader = new FileReader("/home/xrbin/IdeaProjects/DDPT/logs/recommendVar_v0");
                 BufferedReader br = new BufferedReader(reader)
         ) {
             String line;

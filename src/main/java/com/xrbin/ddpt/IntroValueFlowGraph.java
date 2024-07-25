@@ -67,11 +67,11 @@ public class IntroValueFlowGraph {
                         JInstanceFieldRef ifr = (JInstanceFieldRef) v;
                         String var = wpCFG.getMethodOf(u) + "/" + ifr.getBase().toString();
                         if (database.vptInsen.containsKey(var)) {
-                            for (Allocation o : database.vptInsen.get(var)) {
-                                if (!utils.isConstantAllocation(o.getO())) {
-                                    fieldDefine.computeIfAbsent(new Field(new CSAllocation(o), ifr.getField().toString()), k -> new HashSet<>()).add(u);
-                                    fieldDefUseMethod.computeIfAbsent(new Field(new CSAllocation(o), ifr.getField().toString()), k -> new HashSet<>()).add(curM);
-                                    methodFieldDefine.get(curM).add(new Pair<>(u, new Field(new CSAllocation(o), ifr.getField().toString())));
+                            for (CSAllocation o : database.vptInsen.get(var)) {
+                                if (!utils.isConstantAllocation(o.getO().getO())) {
+                                    fieldDefine.computeIfAbsent(new Field(o, ifr.getField().toString()), k -> new HashSet<>()).add(u);
+                                    fieldDefUseMethod.computeIfAbsent(new Field(o, ifr.getField().toString()), k -> new HashSet<>()).add(curM);
+                                    methodFieldDefine.get(curM).add(new Pair<>(u, new Field(o, ifr.getField().toString())));
                                 }
                             }
                         }
@@ -84,11 +84,11 @@ public class IntroValueFlowGraph {
                         JInstanceFieldRef ifr = (JInstanceFieldRef) v;
                         String var = wpCFG.getMethodOf(u) + "/" + ifr.getBase().toString();
                         if (database.vptInsen.containsKey(var)) {
-                            for (Allocation o : database.vptInsen.get(var)) {
-                                if (!utils.isConstantAllocation(o.getO())) {
-                                    fieldUse.computeIfAbsent(new Field(new CSAllocation(o), ifr.getField().toString()), k -> new HashSet<>()).add(u);
-                                    fieldDefUseMethod.computeIfAbsent(new Field(new CSAllocation(o), ifr.getField().toString()), k -> new HashSet<>()).add(curM);
-                                    methodFieldUse.get(curM).add(new Pair<>(u, new Field(new CSAllocation(o), ifr.getField().toString())));
+                            for (CSAllocation o : database.vptInsen.get(var)) {
+                                if (!utils.isConstantAllocation(o.getO().getO())) {
+                                    fieldUse.computeIfAbsent(new Field(o, ifr.getField().toString()), k -> new HashSet<>()).add(u);
+                                    fieldDefUseMethod.computeIfAbsent(new Field(o, ifr.getField().toString()), k -> new HashSet<>()).add(curM);
+                                    methodFieldUse.get(curM).add(new Pair<>(u, new Field(o, ifr.getField().toString())));
                                 }
                             }
                         }
@@ -112,7 +112,7 @@ public class IntroValueFlowGraph {
 
         util.getTime("ivfg - buildVFG");
         Stack<Unit> worklist = new Stack<>();
-        worklist.add(wpCFG.bodys.get(wpCFG.mainMethod.toString()).getUnits().getFirst());
+        wpCFG.getHeads().forEach(worklist::push);
 
         HashSet<SootMethod> flagM = new HashSet<>();
         while (!worklist.empty()) {// better than <for>: for (Unit u : wpCFG) {
@@ -124,7 +124,7 @@ public class IntroValueFlowGraph {
             buildVFGForOneUnit(u);
         }
 
-        System.out.println("--buildVFG-- " + flagM.size());
+//        System.out.println("--buildVFG-- " + flagM.size());
         System.out.println("--------------------------------------------------------- irCount = " + irCount);
         System.out.println("--------------------------------------------------------- vfgEdegs = " + vfgEdegs);
 
@@ -145,9 +145,9 @@ public class IntroValueFlowGraph {
 //            utils.BUILDVFG = false;
 //        }
 //        util.pln("--biuld vfg--" + wpCFG.getMethodOf(u) + " -- " + u.getClass() + "\t" + StaticData.G + u + StaticData.E);
-        if(DatabaseManager.getInstance().appMethod.contains(wpCFG.getMethodOf(u).toString())) {
-            util.myprintln("--biuld vfg--" + wpCFG.getMethodOf(u) + " -- " + u.getClass() + "\t" + StaticData.G + u + StaticData.E, StaticData.E, utils.BUILDVFG);
-        }
+//        if(DatabaseManager.getInstance().appMethod.contains(wpCFG.getMethodOf(u).toString())) {
+//            util.myprintln("--biuld vfg--" + wpCFG.getMethodOf(u) + " -- " + u.getClass() + "\t" + StaticData.G + u + StaticData.E, StaticData.E, utils.BUILDVFG);
+//        }
 //        util.writeFilelnWithPrefix("--biuld vfg--" + wpCFG.getMethodOf(u) + " -- " + u.getClass() + "\t" + u, "ivfg");
         if (u instanceof AssignStmt) {
             AssignStmt u0 = (AssignStmt) u;
@@ -166,11 +166,11 @@ public class IntroValueFlowGraph {
                 String var = wpCFG.getMethodOf(u) + "/" + ifr.getBase().toString();
 //                    util.plnG("--buildVFG - store: " + var);
                 if (database.vptInsen.containsKey(var)) {
-                    for (Allocation o : database.vptInsen.get(var)) {
-                        if (!utils.isConstantAllocation(o.getO())) {
+                    for (CSAllocation o : database.vptInsen.get(var)) {
+                        if (!utils.isConstantAllocation(o.getO().getO())) {
                             if (!utils.BUILDVFGACCURATE) {
                                 // 2022-01-14 20:41:08
-                                Field f = new Field(new CSAllocation(o), ifr.getField().toString());
+                                Field f = new Field(o, ifr.getField().toString());
                                 //                                System.out.println("\t\t--------------" + f);
                                 if (fieldUse.containsKey(f)) {
                                     for (Unit to : fieldUse.get(f)) {
@@ -186,7 +186,7 @@ public class IntroValueFlowGraph {
                             }
                             else {
                                 if(!utils.isPrimitiveType(ifr.getType())) {
-                                    dfsStoreWithCg(u, new Field(new CSAllocation(o), ifr.getField().toString()));
+                                    dfsStoreWithCg(u, new Field(o, ifr.getField().toString()));
                                 }
                             }
                         }
@@ -512,10 +512,10 @@ public class IntroValueFlowGraph {
                     String var = wpCFG.getMethodOf(u) + "/" + ifr.getBase().toString();
 //                    util.plnG("--buildVFG - store: " + var);
                     if (database.vptInsen.containsKey(var)) {
-                        for (Allocation o : database.vptInsen.get(var)) {
-                            if (!utils.isConstantAllocation(o.getO())) {
+                        for (CSAllocation o : database.vptInsen.get(var)) {
+                            if (!utils.isConstantAllocation(o.getO().getO())) {
                                 LocatePointer lpp = new LocatePointer(u,
-                                        new VFGvalue(new Field(new CSAllocation(o), ((JInstanceFieldRef) left).getField().toString())),
+                                        new VFGvalue(new Field(o, ((JInstanceFieldRef) left).getField().toString())),
                                         wpCFG.getMethodOf(u).toString(),
                                         ObjContext.allContext);
                                 if (!utils.isPrimitiveType(((JInstanceFieldRef) left).getField().getType())) {
@@ -526,13 +526,13 @@ public class IntroValueFlowGraph {
 //                                    util.plnP("--biuld vfg son--InstanceFieldRef--" + wpCFG.getMethodOf(u) + " -- " + u.getClass());
 //                                    if(lpp.toString().contains())
                                     if (utils.BUILDVFGACCURATE) {
-                                        if (!utils.isPrimitiveType(ifr.getType()) && !utils.isConstantAllocation(o.getO())) {
-                                            dfsStoreWithCg(u, new Field(new CSAllocation(o), ifr.getField().toString()));
+                                        if (!utils.isPrimitiveType(ifr.getType()) && !utils.isConstantAllocation(o.getO().getO())) {
+                                            dfsStoreWithCg(u, new Field(o, ifr.getField().toString()));
                                         }
                                     }
                                     else {
                                         // 2022-01-14 20:41:08
-                                        Field f = new Field(new CSAllocation(o), ifr.getField().toString());
+                                        Field f = new Field(o, ifr.getField().toString());
                                         //                                System.out.println("\t\t--------------" + f);
                                         if (fieldUse.containsKey(f)) {
                                             for (Unit to : fieldUse.get(f)) {
@@ -1003,6 +1003,13 @@ public class IntroValueFlowGraph {
                     }
                     return false;
                 }
+                else if (right instanceof JInterfaceInvokeExpr) {
+                    JInterfaceInvokeExpr jvi = (JInterfaceInvokeExpr) right;
+                    for (Value v : jvi.getArgs()) {
+                        if (l.equivTo(v)) return true;
+                    }
+                    return false;
+                }
                 else if (right instanceof JDynamicInvokeExpr) {
                     JDynamicInvokeExpr jvi = (JDynamicInvokeExpr) right;
                     for (Value v : jvi.getArgs()) {
@@ -1160,7 +1167,7 @@ public class IntroValueFlowGraph {
                 for (Value v : jvi.getArgs()) {
                     if (l.equivTo(v)) return true;
                 }
-                return false;
+                return jvi.getBase().equals(l);
             }
             else {
 //                System.err.println("useJudge(Unit u, JimpleLocal l): " + u + ": " + l);

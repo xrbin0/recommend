@@ -27,7 +27,7 @@ public class TestBasic {
         utils.STRONGUPDATE = false;
         utils.RESULT = false;
 
-        utils.JARPTAH = "/home/xrbin/Desktop/Java_Project/DDPT_test/build/libs/all.jar";
+        utils.JARPTAH = "/home/xrbin/Java_Project/DDPT_test/build/libs/all.jar";
         utils.MAINCLASS = "com.xrbin.ddptTest.test.test1";
         utils.DATABASE = utils.DOOPWORKPLACE + "/out/all/" + "/database/";
 

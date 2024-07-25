@@ -15,6 +15,8 @@ import soot.util.HashChain;
 
 import java.util.*;
 
+import static com.xrbin.ddpt.utils.MAIN;
+
 public class WholeProgramCFG implements DirectedGraph<Unit> {
     private static final Logger logger = LoggerFactory.getLogger(WholeProgramCFG.class);
     protected DatabaseManager database = DatabaseManager.getInstance();
@@ -55,7 +57,18 @@ public class WholeProgramCFG implements DirectedGraph<Unit> {
         }
 
         Vector<String> methodCount = new Vector<>();
-        worklist.offer(mainMethod.toString());
+
+        if(MAIN) {
+            worklist.offer(mainMethod.toString());
+        }
+        else {
+            bodys.forEach((k, b) -> {
+                if(b.getMethod().getName().equals("main")) {
+                    worklist.offer(b.getMethod().toString());
+                }
+            });
+        }
+
         // method by method
         while (!worklist.isEmpty()) {
             String cur = worklist.poll();
@@ -186,17 +199,22 @@ public class WholeProgramCFG implements DirectedGraph<Unit> {
             cfgs.put(key, cfg);
         }
 
-        DirectedGraph<Unit> c = cfgs.get(mainMethod.toString());
         heads = new ArrayList<>();
         tails = new ArrayList<>();
+
+        bodys.forEach((k, b) -> {
+            if(b.getMethod().getName().equals("main")) {
+                DirectedGraph<Unit> c = cfgs.get(b.getMethod().toString());
 //        util.plnR(mainMethod.toString());
 
-        if(c.getHeads() != null) {
-            heads.addAll(c.getHeads());
-        }
-        if(c.getTails() != null) {
-            tails.addAll(c.getTails());
-        }
+                if(c.getHeads() != null) {
+                    heads.addAll(c.getHeads());
+                }
+                if(c.getTails() != null) {
+                    tails.addAll(c.getTails());
+                }
+            }
+        });
     }
 
     public SootMethod getMainMethod() {
@@ -213,10 +231,12 @@ public class WholeProgramCFG implements DirectedGraph<Unit> {
 
     public WholeProgramCFG(HashMap<String, Body> bodys, String mainMethod) {
         this.bodys = bodys;
-        try {
-            this.mainMethod = bodys.get(mainMethod).getMethod();
-        } catch (Exception e) {
-            System.err.println(e.toString());
+        if (MAIN) {
+            try {
+                this.mainMethod = bodys.get(mainMethod).getMethod();
+            } catch (Exception e) {
+                System.err.println(e.toString());
+            }
         }
     }
 
@@ -261,7 +281,13 @@ public class WholeProgramCFG implements DirectedGraph<Unit> {
     }
 
     public SootMethod getMethodOf(Unit u) {
-        return unitToMethod.get(u);
+        if(unitToMethod.containsKey(u)) {
+            return unitToMethod.get(u);
+        }
+        else {
+//            System.err.println(u);
+            return mainMethod;
+        }
     }
 
     public List<Unit> getTailsOfMethod(SootMethod cm) {

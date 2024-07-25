@@ -1,16 +1,17 @@
 package com.xrbin.rc.model;
 
 import com.xrbin.ddpt.Main;
-import com.xrbin.ddpt.model.Allocation;
-import com.xrbin.ddpt.model.DatabaseManager;
-import com.xrbin.ddpt.model.VFGvalue;
+import com.xrbin.ddpt.model.*;
 import com.xrbin.ddpt.utils;
 import com.xrbin.rc.RecommendCtxSen;
 import com.xrbin.utils.util;
+
 import jas.Pair;
+
 import soot.Local;
 import soot.Unit;
 import soot.Value;
+
 import soot.jimple.*;
 import soot.jimple.internal.JAssignStmt;
 import soot.jimple.internal.JIdentityStmt;
@@ -26,6 +27,8 @@ import java.util.*;
 public class SortCtxSen {
     public static DatabaseManager database = DatabaseManager.getInstance();
     public static Vector<String> rcVar = new Vector<>();
+    public static HashSet<String> rcVarSet = new HashSet<>();
+    public static Vector<String> rcVpt = new Vector<>();
 
     public static boolean sort1Flag = false;
     public static String curVar = "";
@@ -33,6 +36,7 @@ public class SortCtxSen {
     public static Integer[] curVars = { 125, 99, 77, 63, 96, 57, 97, 98, 100, 101, 102, 114,};
     public static HashSet<String> curVarsSet = new HashSet<>();
     public static HashMap<String, Integer> rcVarToInteger = new HashMap<>();
+    // 对变量进行排序（包含了他的所有误报）
     public static void sort1(String rc) {
         curVarsSet.add(curVar);
 
@@ -50,7 +54,7 @@ public class SortCtxSen {
         }
 
         try (
-                FileReader reader = new FileReader("/home/xrbin/Desktop/recommend/logs/appVarJieba" + rc);
+                FileReader reader = new FileReader("/home/xrbin/IdeaProjects/recommend/logs/recommendVar-rc3");
                 BufferedReader br = new BufferedReader(reader)
         ) {
             String line;
@@ -106,9 +110,11 @@ public class SortCtxSen {
 
         rcVar.clear();
         unitToRcVar.keySet().forEach(k -> {
+            util.writeFilelnWithPrefix(unitToRcVar.get(k) + "\t" + k, "recommendVar-rc3-unit");
 //            System.out.println(k + "\t" + unitToRcVar.get(k));
 //            rcVar.add(unitToRcVar.get(k));
         });
+//        unitToRcVar.clear();
         unitToRcVar.keySet().forEach(k -> {
             if(curVarsSet.contains(unitToRcVar.get(k))) {
                 rcVar.add(unitToRcVar.get(k));
@@ -118,13 +124,13 @@ public class SortCtxSen {
 
                 database.vpt2obj = new HashMap<>();
                 try (
-                        FileReader reader = new FileReader("/home/xrbin/Desktop/doophome/out/jieba-fb" + rcVarToInteger.get(unitToRcVar.get(k)) + "/database/VarPointsTo.csv");
+                        FileReader reader = new FileReader("/home/xrbin/doophome/out/jieba-fb" + rcVarToInteger.get(unitToRcVar.get(k)) + "/database/VarPointsTo.csv");
                         BufferedReader br = new BufferedReader(reader)
                 ) {
                     String line;
                     while ((line = br.readLine()) != null) {
                         String[] sa = line.split("\t");
-                        database.vpt2obj.computeIfAbsent(sa[3], key -> new HashSet<>()).add(new Allocation(sa[1]));
+                        database.vpt2obj.computeIfAbsent(sa[3], key -> new HashSet<>()).add(new CSAllocation(new Allocation(sa[1])));
                     }
                 }
                 catch (IOException e) {
@@ -334,7 +340,7 @@ public class SortCtxSen {
                                             if (!predRetVar.equals("")) {
                                                 if (out) System.out.println("\t\t" + u + "\t" + succ);
                                                 if (out) System.out.println("\t\t\t" + predRetVar);
-                                                HashSet<Allocation> allO = new HashSet<>(database.vptInsen.get(predRetVar));
+                                                HashSet<CSAllocation> allO = new HashSet<>(database.vptInsen.get(predRetVar));
                                                 for (String var : retVar) {
                                                     if (!var.equals(predRetVar)) {
                                                         allO.removeAll(database.vptInsen.get(var));
@@ -533,7 +539,7 @@ public class SortCtxSen {
             });
 
             if (out) System.out.println("\t\t\t" + predRetVar);
-            HashSet<Allocation> allO = new HashSet<>(database.vptInsen.get(predRetVar));
+            HashSet<CSAllocation> allO = new HashSet<>(database.vptInsen.get(predRetVar));
             for (String var : retVar) {
                 if (!var.equals(predRetVar)) {
                     if (out) System.out.println("\t\t\t" + var);
@@ -598,7 +604,7 @@ public class SortCtxSen {
             });
 
             if (out) System.out.println("\t\t\t" + predRetVar);
-            HashSet<Allocation> allO = new HashSet<>(database.vptInsen.get(predRetVar));
+            HashSet<CSAllocation> allO = new HashSet<>(database.vptInsen.get(predRetVar));
             for (String var : retVar) {
                 if (!var.equals(predRetVar)) {
                     if (out) System.out.println("\t\t\t" + var);
@@ -662,7 +668,7 @@ public class SortCtxSen {
             });
 
             if (out) System.out.println("\t\t\t" + predRetVar);
-            HashSet<Allocation> allO = new HashSet<>(database.vptInsen.get(predRetVar));
+            HashSet<CSAllocation> allO = new HashSet<>(database.vptInsen.get(predRetVar));
             for (String var : retVar) {
                 if (!var.equals(predRetVar)) {
                     if (out) System.out.println("\t\t\t" + var);
@@ -777,4 +783,776 @@ public class SortCtxSen {
             }
         }
     }
+
+
+    // 对指向关系进行排序
+    // 由于不能区分
+    public static void sort2(String rc) {
+        try {
+            Runtime.getRuntime().exec("rm logs/recommendVarAndScore-rc" + rc);
+            Runtime.getRuntime().exec("rm logs/ivfgDfs");
+            Runtime.getRuntime().exec("rm logs/ivfgDfsOnly");
+        }
+        catch (Exception e) {
+            System.err.print("");
+        }
+
+        if (RecommendCtxSen.flag_main) {
+            Main.run();
+            RecommendCtxSen.flag_main = false;
+        }
+
+        try (
+//                FileReader reader = new FileReader("/home/xrbin/IdeaProjects/recommend/logs/appVptJiebaSingle" + rc);
+//                FileReader reader = new FileReader("/home/xrbin/IdeaProjects/recommend/logs/appVarMustVpt" + rc);
+                FileReader reader = new FileReader("/home/xrbin/IdeaProjects/recommend/logs/appVptJieba" + rc);
+                BufferedReader br = new BufferedReader(reader)
+        ) {
+            String line;
+            while ((line = br.readLine()) != null) {
+                if(rcVarSet.add(line.split("\t")[1])) {
+                    rcVar.add(line.split("\t")[1]);
+                }
+                rcVpt.add(line);
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
+        HashMap<String, Unit> rcVarToUnit = new HashMap<>();
+        HashMap<String, Integer> rcVptToScore = new HashMap<>();
+        Main.wpCFG.getUnits().forEach(unit -> {
+            if ((unit instanceof AssignStmt) && ((AssignStmt) unit).getLeftOp() instanceof Local) {
+                String l = Main.wpCFG.getMethodOf(unit).toString() + "/" + ((AssignStmt) unit).getLeftOp().toString();
+                if (database.nameToPname.containsKey(l)) {
+                    if (rcVar.contains(database.nameToPname.get(l))) {
+                        rcVar.remove(database.nameToPname.get(l));
+                        rcVarToUnit.put(database.nameToPname.get(l), unit);
+                    }
+                }
+            }
+            else if (unit instanceof IdentityStmt) {
+                String l = Main.wpCFG.getMethodOf(unit).toString() + "/" + ((IdentityStmt) unit).getLeftOp().toString();
+                if (database.nameToPname.containsKey(l)) {
+                    if (rcVar.contains(database.nameToPname.get(l))) {
+                        rcVar.remove(database.nameToPname.get(l));
+                        rcVarToUnit.put(database.nameToPname.get(l), unit);
+                    }
+                }
+            }
+            else if (unit instanceof JReturnStmt) {
+                String l = Main.wpCFG.getMethodOf(unit).toString() + "/" + ((JReturnStmt) unit).getOp().toString();
+                if (database.nameToPname.containsKey(l)) {
+                    if (rcVar.contains(database.nameToPname.get(l))) {
+                        rcVar.remove(database.nameToPname.get(l));
+                        rcVarToUnit.put(database.nameToPname.get(l), unit);
+                    }
+                }
+            }
+        });
+
+        rcVpt.forEach(vpt -> {
+            String var = vpt.split("\t")[1];
+            if(rcVarToUnit.containsKey(var)) {
+                rcVptToScore.put(vpt, dfsSort2(rcVarToUnit.get(var), vpt.split("\t")[0]));
+            }
+        });
+
+//        rcVarToUnit.keySet().forEach(rcVar -> {
+//            util.writeFilelnWithPrefix(rcVar, "recommendVarAndScore-rc-rcvar" + rc);
+//        });
+
+        rcVptToScore.keySet().forEach(s ->
+            util.writeFilelnWithPrefix(s + "\t" + rcVptToScore.get(s), "recommendVarAndScore-rc" + rc)
+        );
+
+    }
+
+    public static Integer dfsSort2(Unit root, String allo) {
+//        System.out.println("dfsSort2 1: " + root + "\t->\t" + allo);
+//        if(true) return 0;
+        Unit u;
+        int res = 0;
+        CSAllocation allocation = new CSAllocation(new Allocation(allo));
+        Stack<Pair<Unit, VFGvalue>> dfsStack2 = new Stack<>();
+
+        if (true) {
+            HashSet<Pair<Unit, VFGvalue>> color = new HashSet<>(); // VFGvalue是来自上一个unit的可能被改变的值
+            if (root instanceof AssignStmt || root instanceof IdentityStmt) {
+                dfsStack2.push(new Pair<>(root, null));
+            }
+            while (!dfsStack2.empty()) {
+                Pair<Unit, VFGvalue> uv = dfsStack2.pop();
+                u = uv.getO1();
+                vv = uv.getO2();
+//                System.out.println("dfsSort2 2: " + uv);
+
+                if (vv == null) { // 处理第一个(root)
+                    if (u instanceof AssignStmt) {
+                        for (Unit succ : Main.ivfg.getSuccs(u)) {
+//                            System.out.println("dfsSort2 5: " + succ);
+                            for(VFGvalue vvv : Main.ivfg.getEdgeValue(u, succ)) {
+//                                System.out.println("dfsSort2 4: " + vvv);
+                                if (vvv.getValue().equals(((AssignStmt) u).getLeftOp())) {
+                                    dfsStack2.push(new Pair<>(succ, new VFGvalue(((AssignStmt) u).getLeftOp())));
+                                }
+                            }
+                        }
+                    }
+                    else if (u instanceof IdentityStmt) {
+                        for (Unit succ : Main.ivfg.getSuccs(u)) {
+                            for(VFGvalue vvv : Main.ivfg.getEdgeValue(u, succ)) {
+                                if (vvv.getValue().equals(((IdentityStmt) u).getLeftOp())) {
+                                    dfsStack2.push(new Pair<>(succ, new VFGvalue(((IdentityStmt) u).getLeftOp())));
+                                }
+                            }
+                        }
+                    }
+                    else {
+                        System.out.println(u);
+                    }
+                    continue;
+                }
+
+                if (color.add(uv)) {
+//                System.out.println(uv.getO1());
+//                    unitToVarToDiffVPT(u);
+//                    res += unitToVarToVPTSize(u);
+                    res += 1;
+                    // 对比值流图和指针集上的差距
+                    for (Unit succ : Main.ivfg.getSuccs(u)) {
+//                        System.out.println("dfsSort2 3: " + succ);
+
+                        if (u instanceof JAssignStmt) { // 无论前面来的是什么都会对left造成影响
+                            JAssignStmt assignStmt = (JAssignStmt) u;
+                            Value left = assignStmt.getLeftOp();
+                            Value right = assignStmt.getRightOp();
+
+                            if (left instanceof Local) {
+                                VFGvalue curV = new VFGvalue(left);
+//                            dfsStack2.push(new Pair<>(succ, curV));  // a = ? 无论值流的值是涉密 ？是什么，a的值都有可能收到影响，但是可以细分，a = f()不传递，但其实可以通过返回值间接传递
+                                if (right instanceof InstanceInvokeExpr && succ instanceof IdentityStmt) {
+                                    // 这里只处理到被调用方法的succ，其他情况后面统一处理
+                                    if (vv.equals(new VFGvalue(left))) {
+                                        // 对应returnStmt里面的特殊处理，传的是[a=b.f();]的a而不是[return r;]的r
+                                        Main.ivfg.getEdgeValue(u, succ).forEach(vvvvvv -> {
+                                            if (vvvvvv.equals(vv)) {
+                                                dfsStack2.push(new Pair<>(succ, vv));
+                                            }
+                                        });
+                                    }
+                                    else if (succ.toString().contains("@parameter")) {
+                                        invokeArgDiffVpt2(dfsStack2, (InstanceInvokeExpr) right, u,  succ, allocation);
+//                                        dfsStack2.push(new Pair<>(succ, vv));
+                                    }
+                                    else if (succ.toString().contains("this")) {
+//                                        dfsStack2.push(new Pair<>(succ, vv));
+                                        if (((InstanceInvokeExpr) right).getBase().equals(vv.getValue())) {
+                                            invokeThisDiffVpt2(dfsStack2, (InstanceInvokeExpr) right, u, succ, allocation);
+                                        }
+                                    }
+                                }
+                                else if (right instanceof StaticInvokeExpr && succ instanceof IdentityStmt) {
+                                    if (vv.equals(new VFGvalue(left))) {
+                                        dfsStack2.push(new Pair<>(succ, vv));
+                                    }
+                                    else if (succ.toString().contains("@parameter")) {
+                                        dfsStack2.push(new Pair<>(succ, vv));
+//                                        invokeArgDiffVpt((StaticInvokeExpr) right, succ);
+                                    }
+                                }
+                                else if (right instanceof InstanceFieldRef) {
+                                    // 两种值流都导向同一个结果
+                                    if (((InstanceFieldRef) right).getBase().equals(vv.getValue())) {
+//                                        loadDiffVpt2(dfsStack2, u, allocation);
+                                        dfsStack2.push(new Pair<>(succ, curV));
+                                    }
+                                    else {
+                                        dfsStack2.push(new Pair<>(succ, curV));
+                                    }
+                                }
+                                else if (right instanceof StaticFieldRef) {
+                                    dfsStack2.push(new Pair<>(succ, curV));
+                                }
+                                else if (right instanceof CastExpr) {
+                                    dfsStack2.push(new Pair<>(succ, curV));
+//                                    continue;
+                                }
+                                else {
+                                    dfsStack2.push(new Pair<>(succ, curV));
+                                }
+                            }
+                            else if (left instanceof ArrayRef) {
+                                dfsStack2.push(new Pair<>(succ, new VFGvalue(((ArrayRef) left).getBase())));
+                            }
+                            else if (left instanceof InstanceFieldRef) {
+//                                dfsStack2.push(new Pair<>(succ, vv));
+                                if (succ instanceof AssignStmt && ((AssignStmt) succ).getRightOp() instanceof InstanceFieldRef) {
+                                    if (vv.getValue().equals(((InstanceFieldRef) left).getBase())) {
+                                        for (VFGvalue vvvv : Main.ivfg.getEdgeValue(u, succ)) {
+                                            if (vvvv.equals(vv)) {
+                                                dfsStack2.push(new Pair<>(succ, vvvv));
+                                            }
+                                        }
+                                    }
+                                    else if (vv.getValue().equals(right)) {
+                                        for (VFGvalue vvvv : Main.ivfg.getEdgeValue(u, succ)) {
+                                            dfsStack2.push(new Pair<>(succ, vvvv));
+                                        }
+                                    }
+                                }
+                                else {
+
+                                }
+                            }
+                            else if (left instanceof StaticFieldRef) {
+                                for (VFGvalue vvvv : Main.ivfg.getEdgeValue(u, succ)) {
+                                    dfsStack2.push(new Pair<>(succ, vvvv));
+                                }
+                            }
+                        }
+                        else if (u instanceof JIdentityStmt) {
+                            Value left = ((JIdentityStmt) u).getLeftOp();
+                            Value right = ((JIdentityStmt) u).getRightOp();
+                            if (left instanceof Local) {
+                                dfsStack2.push(new Pair<>(succ, new VFGvalue(left)));
+                            }
+                        }
+                        else if (u instanceof JInvokeStmt) {
+//                            dfsStack2.push(new Pair<>(succ, vv));
+                            if (((JInvokeStmt) u).getInvokeExpr() instanceof InstanceInvokeExpr) {
+//                                dfsStack2.push(new Pair<>(succ, vv));
+                                if (succ.toString().contains("@parameter")) {
+                                    invokeArgDiffVpt2(dfsStack2, (InstanceInvokeExpr) ((JInvokeStmt) u).getInvokeExpr(), u, succ, allocation);
+                                }
+                                else if (succ.toString().contains("this")) {
+                                    if (((InstanceInvokeExpr) ((JInvokeStmt) u).getInvokeExpr()).getBase().equals(vv.getValue())) {
+                                        invokeThisDiffVpt2(dfsStack2, (InstanceInvokeExpr) ((JInvokeStmt) u).getInvokeExpr(), u, succ, allocation);
+                                    }
+                                }
+                            }
+                            else if (((JInvokeStmt) u).getInvokeExpr() instanceof StaticInvokeExpr) {
+                                invokeArgDiffVpt2(dfsStack2, (StaticInvokeExpr) ((JInvokeStmt) u).getInvokeExpr(), u, succ, allocation);
+                            }
+                        }
+                        else if (u instanceof JReturnStmt) {
+                            boolean out = false;
+                            for (VFGvalue vvvv : Main.ivfg.getEdgeValue(u, succ)) {
+                                if (succ instanceof AssignStmt && ((AssignStmt) succ).getRightOp() instanceof InterfaceInvokeExpr) {
+                                    JAssignStmt assignStmt = (JAssignStmt) succ;
+                                    Value left = assignStmt.getLeftOp();
+                                    Value right = assignStmt.getRightOp();
+
+                                    if (left instanceof Local && right instanceof InterfaceInvokeExpr) {
+                                        InterfaceInvokeExpr v = (InterfaceInvokeExpr) right;
+                                        String methodName = Main.wpCFG.getMethodOf(succ).toString() + "/" + v.getMethod().getDeclaringClass() + "." + v.getMethod().getName();
+                                        methodName = DatabaseManager.getInstance().mil.get(methodName + "/" + utils.getLineNumber(succ));
+
+                                        if (out) System.out.println("\n" + u + "\t" + methodName);
+                                        if (DatabaseManager.getInstance().cg.get(methodName) != null) {
+                                            retVar = new HashSet<>();
+                                            for (String cm : DatabaseManager.getInstance().cg.get(methodName)) {
+                                                if (out) System.out.println("\tcm :" + cm);
+                                                DirectedGraph<Unit> cfg = Main.wpCFG.getCfgs().get(cm);
+                                                for(Unit tail : cfg.getTails()) {
+                                                    if (tail instanceof JReturnStmt) {
+                                                        String ret = Main.wpCFG.getMethodOf(tail).toString() + "/" + ((JReturnStmt) tail).getOp().toString();
+                                                        if (database.nameToPname.containsKey(ret)) {
+                                                            if (out) System.out.println("\t" + ret);
+                                                            retVar.add(database.nameToPname.get(ret));
+                                                        }
+                                                        if (database.nameToPname.containsKey(ret) && u.equals(tail)) {
+                                                            predRetVar = database.nameToPname.get(ret);
+                                                        }
+                                                    }
+                                                }
+                                            }
+                                            if (!predRetVar.equals("")) {
+                                                if (out) System.out.println("\t\t" + u + "\t" + succ);
+                                                if (out) System.out.println("\t\t\t" + predRetVar);
+                                                HashSet<CSAllocation> allO = new HashSet<>(database.vptInsen.get(predRetVar));
+                                                for (String var : retVar) {
+                                                    if (!var.equals(predRetVar)) {
+                                                        allO.removeAll(database.vptInsen.get(var));
+                                                    }
+                                                }
+                                                if (out) System.out.println("\t\t\t\t" + allO.size());
+                                                if (allO.size() > 1) {
+                                                    dfsStack2.push(new Pair<>(succ, new VFGvalue(((JAssignStmt) succ).getLeftOp())));
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                                else if (succ instanceof AssignStmt && ((AssignStmt) succ).getRightOp() instanceof StaticInvokeExpr) {
+                                    dfsStack2.push(new Pair<>(succ, vvvv));
+                                }
+                                else if (succ instanceof InvokeStmt) {
+
+                                }
+                                else {
+                                    dfsStack2.push(new Pair<>(succ, vvvv));
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+            return res;
+        }
+        else {
+            HashSet<Pair<Unit, VFGvalue>> color = new HashSet<>(); // VFGvalue是来自上一个unit的可能被改变的值
+            if (root instanceof AssignStmt) {
+                dfsStack2.push(new Pair<>(root, new VFGvalue(((AssignStmt)root).getLeftOp())));
+            }
+            else if (root instanceof IdentityStmt) {
+                dfsStack2.push(new Pair<>(root, new VFGvalue(((IdentityStmt)root).getLeftOp())));
+            }
+
+            while (!dfsStack2.empty()) {
+                Pair<Unit, VFGvalue> uv = dfsStack2.pop();
+                u = uv.getO1();
+                vv = uv.getO2();
+                if (color.add(uv)) {
+                    unitToVarToDiffVPT(u);
+                    res += 1;//unitToVarToVPTSize(u);
+                    // 对比值流图和指针集上的差距
+                    for (Unit succ : Main.ivfg.getSuccs(u)) {
+//                        System.out.println("\n" + succ);
+                        for(VFGvalue vvv : Main.ivfg.getEdgeValue(u, succ)) {
+//                            System.out.println("\t" + vvv);
+                            if(vvv.equals(vv)) {
+                                if (succ instanceof JAssignStmt) { // 无论前面来的是什么都会对left造成影响
+                                    JAssignStmt assignStmt = (JAssignStmt) succ;
+                                    Value left = assignStmt.getLeftOp();
+                                    Value right = assignStmt.getRightOp();
+                                    VFGvalue curV = new VFGvalue(left);
+
+                                    if (left instanceof Local) {
+                                        if(u instanceof ReturnStmt) {
+                                            dfsStack2.push(new Pair<>(succ, curV));
+                                        }
+                                        if (right instanceof InstanceInvokeExpr) {
+                                            InstanceInvokeExpr iie = (InstanceInvokeExpr) right;
+                                            if(iie.getBase().equals(vv.getValue())) {
+                                                dfsStack2.push(new Pair<>(succ, vv));
+                                            }
+                                            else {
+                                                iie.getArgs().forEach(arg -> {
+                                                    if(arg.equals(vv.getValue())) {
+                                                        dfsStack2.push(new Pair<>(succ, vv));
+                                                    }
+                                                });
+                                            }
+                                        }
+                                        else if (right instanceof StaticInvokeExpr) {
+                                            StaticInvokeExpr iie = (StaticInvokeExpr) right;
+                                            iie.getArgs().forEach(arg -> {
+                                                if(arg.equals(vv.getValue())) {
+                                                    dfsStack2.push(new Pair<>(succ, vv));
+                                                }
+                                            });
+                                        }
+                                        else if (right instanceof InstanceFieldRef) {
+                                            dfsStack2.push(new Pair<>(succ, curV));
+                                            System.out.print("");
+                                        }
+                                        else if (right instanceof StaticFieldRef) {
+                                            dfsStack2.push(new Pair<>(succ, curV));
+                                            System.out.print("");
+                                        }
+                                        else if (right instanceof CastExpr) {
+                                            dfsStack2.push(new Pair<>(succ, curV));
+                                            System.out.print("");
+                                        }
+                                        else {
+                                            dfsStack2.push(new Pair<>(succ, curV));
+                                            System.out.print("");
+                                        }
+                                    }
+                                    else if (left instanceof ArrayRef) {
+                                        dfsStack2.push(new Pair<>(succ, new VFGvalue(((ArrayRef) left).getBase())));
+                                    }
+                                    else if (left instanceof InstanceFieldRef) {
+                                        for (Unit succsucc : Main.ivfg.getSuccs(succ)) {
+                                            for (VFGvalue vvvvvv : Main.ivfg.getEdgeValue(succ, succsucc)) {
+                                                dfsStack2.push(new Pair<>(succ, vvvvvv));
+                                            }
+                                        }
+                                    }
+                                    else if (left instanceof StaticFieldRef) {
+                                        for (Unit succsucc : Main.ivfg.getSuccs(succ)) {
+                                            for (VFGvalue vvvvvv : Main.ivfg.getEdgeValue(succ, succsucc)) {
+                                                dfsStack2.push(new Pair<>(succ, vvvvvv));
+                                            }
+                                        }
+                                    }
+                                }
+                                else if (succ instanceof JIdentityStmt) {
+                                    Value left = ((JIdentityStmt) succ).getLeftOp();
+                                    Value right = ((JIdentityStmt) succ).getRightOp();
+                                    if (left instanceof Local) {
+                                        dfsStack2.push(new Pair<>(succ, new VFGvalue(left)));
+                                    }
+                                }
+                                else if (succ instanceof JInvokeStmt) {
+                                    if (((JInvokeStmt) succ).getInvokeExpr() instanceof InstanceInvokeExpr) {
+                                        InstanceInvokeExpr iie = (InstanceInvokeExpr) ((JInvokeStmt) succ).getInvokeExpr();
+                                        if(iie.getBase().equals(vv.getValue())) {
+                                            dfsStack2.push(new Pair<>(succ, vv));
+                                        }
+                                        else {
+                                            iie.getArgs().forEach(arg -> {
+                                                if(arg.equals(vv.getValue())) {
+                                                    dfsStack2.push(new Pair<>(succ, vv));
+                                                }
+                                            });
+                                        }
+                                    }
+                                    else if (((JInvokeStmt) succ).getInvokeExpr() instanceof StaticInvokeExpr) {
+                                        StaticInvokeExpr iie = (StaticInvokeExpr) ((JInvokeStmt) succ).getInvokeExpr();
+                                        iie.getArgs().forEach(arg -> {
+                                            if(arg.equals(vv.getValue())) {
+                                                dfsStack2.push(new Pair<>(succ, vv));
+                                            }
+                                        });
+                                    }
+                                }
+                                else if (succ instanceof JReturnStmt) {
+                                    dfsStack2.push(new Pair<>(succ, vv));
+                                }
+                                else {
+                                    dfsStack2.push(new Pair<>(succ, vv));
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+            return res;
+        }
+    }
+
+
+    public static void invokeThisDiffVpt2(Stack<Pair<Unit, VFGvalue>> dfsStack2, InstanceInvokeExpr v, Unit u, Unit succ, CSAllocation allo) {
+        int res = 0;
+        Value vvvvvv = ((IdentityStmt) succ).getLeftOp();
+        boolean out = false;
+        index = 0;
+        predRetVar = "";
+        retVar = new HashSet<>();
+        if (out) System.out.println("\n" + u + "\t" + succ + "\t" + vv);
+        predRetVar = Main.wpCFG.getMethodOf(u).toString() + "/" + v.getBase().toString();
+        if (database.nameToPname.containsKey(predRetVar)) {
+            predRetVar = database.nameToPname.get(predRetVar);
+        }
+
+        if (database.vptInsen.containsKey(predRetVar)) {
+            Main.ivfg.getPreds(succ).forEach(pred -> {
+                InstanceInvokeExpr iie = null;
+                if (pred instanceof AssignStmt && ((AssignStmt) pred).getRightOp() instanceof InstanceInvokeExpr) {
+                    iie = (InstanceInvokeExpr) ((AssignStmt) pred).getRightOp();
+                }
+                else if (pred instanceof InvokeStmt) {
+                    iie = (InstanceInvokeExpr) ((InvokeStmt) pred).getInvokeExpr();
+                }
+                if (iie != null) {
+                    if (out) System.out.println("" + "\tpred: " + pred);
+
+                    String base = Main.wpCFG.getMethodOf(pred).toString() + "/" + ((InstanceInvokeExpr)((Stmt) pred).getInvokeExpr()).getBase();
+                    if (database.nameToPname.containsKey(base)) {
+                        base = database.nameToPname.get(base);
+                        if (out) System.out.println("" + "\t\tbase: " + base);
+                        retVar.add(base);
+                    }
+                }
+            });
+
+            if (out) System.out.println("\t\t\t" + predRetVar);
+            HashSet<CSAllocation> allO = new HashSet<>(database.vptInsen.get(predRetVar));
+            for (String var : retVar) {
+                if (!var.equals(predRetVar)) {
+                    if (out) System.out.println("\t\t\t" + var);
+                    allO.removeAll(database.vptInsen.get(var));
+                }
+            }
+            if (out) System.out.println("\t\t\t\t" + allO.size());
+            if (allO.contains(allo)) {
+                dfsStack2.push(new Pair<>(succ, new VFGvalue(vvvvvv)));
+            }
+        }
+    }
+
+    public static void invokeArgDiffVpt2(Stack<Pair<Unit, VFGvalue>> dfsStack2, InstanceInvokeExpr v, Unit u, Unit succ, CSAllocation allo) {
+        int res = 0;
+        Value vvvvvv = ((IdentityStmt) succ).getLeftOp();
+        boolean out = false;
+        index = 0;
+        predRetVar = "";
+        retVar = new HashSet<>();
+        if (out) System.out.println("\n" + u + "\t" + succ + "\t" + vv);
+        for (Value l : v.getArgs()) {
+            if (vv.getValue().equals(l)) {
+                predRetVar = Main.wpCFG.getMethodOf(u).toString() + "/" + l.toString();
+                if (database.nameToPname.containsKey(predRetVar)) {
+                    predRetVar = database.nameToPname.get(predRetVar);
+                }
+                break;
+            }
+            index++;
+        }
+        if(!succ.toString().contains("@parameter" + index)) return ;
+
+        if (out) System.out.println("" + "\tindex = " + index);
+
+        if (!predRetVar.equals("") && database.vptInsen.containsKey(predRetVar)) {
+            Main.ivfg.getPreds(succ).forEach(pred -> {
+                InstanceInvokeExpr iie = null;
+                if (pred instanceof AssignStmt && ((AssignStmt) pred).getRightOp() instanceof InstanceInvokeExpr) {
+                    iie = (InstanceInvokeExpr) ((AssignStmt) pred).getRightOp();
+                }
+                else if (pred instanceof InvokeStmt) {
+                    iie = (InstanceInvokeExpr) ((InvokeStmt) pred).getInvokeExpr();
+                }
+                if (iie != null) {
+                    if (out) System.out.println("" + "\tpred: " + pred);
+
+                    int i = 0;
+                    for (Value l : iie.getArgs()) {
+                        String arg = Main.wpCFG.getMethodOf(pred).toString() + "/" + l.toString();
+                        if (database.nameToPname.containsKey(arg)) {
+                            arg = database.nameToPname.get(arg);
+                            if (i == index && !predRetVar.equals(arg)) {
+                                if (out) System.out.println("" + "\t\targ: " + arg);
+                                retVar.add(arg);
+                            }
+                        }
+                        i++;
+                    }
+                }
+            });
+
+            if (out) System.out.println("\t\t\t" + predRetVar);
+            HashSet<CSAllocation> allO = new HashSet<>(database.vptInsen.get(predRetVar));
+            for (String var : retVar) {
+                if (!var.equals(predRetVar)) {
+                    if (out) System.out.println("\t\t\t" + var);
+                    allO.removeAll(database.vptInsen.get(var));
+                }
+            }
+            if (out) System.out.println("\t\t\t\t" + allO.size());
+            if (allO.contains(allo)) {
+                dfsStack2.push(new Pair<>(succ, new VFGvalue(vvvvvv)));
+            }
+        }
+
+    }
+
+    public static void invokeArgDiffVpt2(Stack<Pair<Unit, VFGvalue>> dfsStack2, StaticInvokeExpr v, Unit u, Unit succ, CSAllocation allo) {
+        int res = 0;
+        Value vvvvvv = ((IdentityStmt) succ).getLeftOp();
+        boolean out = false;
+        index = 0;
+        predRetVar = "";
+        retVar = new HashSet<>();
+        if (out) System.out.println("\n" + u + "\t" + succ + "\t" + vv);
+        for (Value l : v.getArgs()) {
+            if (vv.getValue().equals(l)) {
+                predRetVar = Main.wpCFG.getMethodOf(u).toString() + "/" + l.toString();
+                if (database.nameToPname.containsKey(predRetVar)) {
+                    predRetVar = database.nameToPname.get(predRetVar);
+                }
+                break;
+            }
+            index++;
+        }
+        if(!succ.toString().contains("@parameter" + index)) return;
+        if (out) System.out.println("" + "\tindex = " + index);
+
+        if (!predRetVar.equals("") && database.vptInsen.containsKey(predRetVar)) {
+            Main.ivfg.getPreds(succ).forEach(pred -> {
+                StaticInvokeExpr si = null;
+                if (pred instanceof AssignStmt && ((AssignStmt) pred).getRightOp() instanceof StaticInvokeExpr) {
+                    si = (StaticInvokeExpr) ((AssignStmt) pred).getRightOp();
+                }
+                else if (pred instanceof InvokeStmt) {
+                    si = (StaticInvokeExpr) ((InvokeStmt) pred).getInvokeExpr();
+                }
+                if (si != null) {
+                    if (out) System.out.println("" + "\tpred: " + pred);
+
+                    int i = 0;
+                    for (Value l : si.getArgs()) {
+                        String arg = Main.wpCFG.getMethodOf(pred).toString() + "/" + l.toString();
+                        if (database.nameToPname.containsKey(arg)) {
+                            arg = database.nameToPname.get(arg);
+                            if (i == index && !predRetVar.equals(arg)) {
+                                if (out) System.out.println("" + "\t\targ: " + arg);
+                                retVar.add(arg);
+                            }
+                        }
+                        i++;
+                    }
+                }
+            });
+
+            if (out) System.out.println("\t\t\t" + predRetVar);
+            HashSet<CSAllocation> allO = new HashSet<>(database.vptInsen.get(predRetVar));
+            for (String var : retVar) {
+                if (!var.equals(predRetVar)) {
+                    if (out) System.out.println("\t\t\t" + var);
+                    allO.removeAll(database.vptInsen.get(var));
+                }
+            }
+            if (out) System.out.println("\t\t\t\t" + allO.size());
+            if (allO.contains(allo)) {
+                dfsStack2.push(new Pair<>(succ, new VFGvalue(vvvvvv)));
+            }
+        }
+
+    }
+
+    public static void loadDiffVpt2(Stack<Pair<Unit, VFGvalue>> dfsStack2, Unit u, CSAllocation allo) {
+        boolean out = true;
+        if (out) System.out.println("\n" + u  + "\t" + vv);
+
+        Field curField = null;
+        Vector<Field> otherField = new Vector<>();
+        String base = Main.wpCFG.getMethodOf(u).toString() + "/" + ((InstanceFieldRef)((AssignStmt) u).getRightOp()).getBase().toString();
+        if (database.nameToPname.containsKey(base)) {
+            base = database.nameToPname.get(base);
+        }
+
+        if (database.vptInsen.containsKey(base)) {
+            for(CSAllocation allocation : database.vptInsen.get(base)){
+                Field field = new Field(allocation, ((InstanceFieldRef)((AssignStmt) u).getRightOp()).getField().toString());
+                if(allo.equals(allocation)) {
+                    curField = field;
+                }
+                else {
+                    otherField.add(field);
+                }
+            }
+
+            if (out) System.out.println("\t\t\t" + curField);
+            if (database.instanceFieldVPT.containsKey(curField)) {
+                HashSet<CSAllocation> allO = new HashSet<>(database.instanceFieldVPT.get(curField));
+                if (out) System.out.println("\t\t\t\t" + allO.size());
+                for (Field field : otherField) {
+                    if (out) System.out.println("\t\t\t" + field);
+                    if (database.instanceFieldVPT.containsKey(field)) {
+                        allO.removeAll(database.instanceFieldVPT.get(field));
+                    }
+                }
+                if (out) System.out.println("\t\t\t\t" + allO.size());
+                if (allO.contains(allo)) {
+                    dfsStack2.push(new Pair<>(u, new VFGvalue(((AssignStmt) u).getLeftOp())));
+                    if (out) System.out.println("\t\t\t\t\t" + dfsStack2.peek());
+                }
+            }
+        }
+    }
+
+    public static int unitToVarToVPTSize2(Unit u) {
+        int res = 0;
+        if (Main.wpCFG.getMethodOf(u) != null) {
+            String var = Main.wpCFG.getMethodOf(u).toString() + "/";
+            if (u instanceof JAssignStmt) { // 无论前面来的是什么都会对left造成影响
+                JAssignStmt u0 = (JAssignStmt) u;
+                Value left = u0.getLeftOp();
+                Value right = u0.getRightOp();
+                if (left instanceof Local) {
+
+                }
+                else if (left instanceof ArrayRef) {
+                    left = ((ArrayRef) left).getBase();
+                }
+                else if (left instanceof InstanceFieldRef) {
+
+                }
+                else if (left instanceof StaticFieldRef) {
+
+                }
+                var = var + left.toString();
+            }
+            else if (u instanceof JIdentityStmt) {
+                var = var + ((JIdentityStmt) u).getLeftOp().toString();
+            }
+            else if (u instanceof JInvokeStmt) {
+                var = var + vv.toString();
+            }
+            else if (u instanceof JReturnStmt) {
+                var = var + ((JReturnStmt) u).getOp().toString();
+            }
+
+            if (database.nameToPname.containsKey(var)) {
+                res += database.vptInsen.get(database.nameToPname.get(var)).size();
+            }
+            else {
+                res += 1;
+            }
+        }
+        else {
+            res++;
+        }
+        return res;
+    }
+
+    public static void unitToVarToDiffVPT2(Unit u) {
+        if (sort1Flag && Main.wpCFG.getMethodOf(u) != null) {
+//                    util.writeFilelnWithPrefix(Main.wpCFG.getMethodOf(u) + "\t" + u, "ivfgDfs");
+            String var = Main.wpCFG.getMethodOf(u).toString() + "/";
+            if (u instanceof JAssignStmt) { // 无论前面来的是什么都会对left造成影响
+                JAssignStmt u0 = (JAssignStmt) u;
+                Value left = u0.getLeftOp();
+                Value right = u0.getRightOp();
+                if (left instanceof Local) {
+
+                }
+                else if (left instanceof ArrayRef) {
+                    left = ((ArrayRef) left).getBase();
+                }
+                else if (left instanceof InstanceFieldRef) {
+
+                }
+                else if (left instanceof StaticFieldRef) {
+
+                }
+                var = var + left.toString();
+            }
+            else if (u instanceof JIdentityStmt) {
+                var = var + ((JIdentityStmt) u).getLeftOp().toString();
+            }
+            else if (u instanceof JInvokeStmt) {
+                var = var + vv.toString();
+            }
+            else if (u instanceof JReturnStmt) {
+                var = var + ((JReturnStmt) u).getOp().toString();
+            }
+            if (database.nameToPname.containsKey(var)) {
+                ccc = 0;
+                cc = 0;
+                String v = database.nameToPname.get(var);
+                if (database.vpt2obj.containsKey(v) && database.vpt2obj.containsKey(v)) {
+                    cc += database.vptInsen.get(v).size();
+                    ccc += database.vptInsen.get(v).size() - database.vpt2obj.get(v).size();
+                    if (ccc == 0) {
+                        ccc += 1;
+                    }
+                }
+                if (ccc > 1) {
+                    util.writeFilelnWithPrefix("-----" + "\t" + cc + "\t" + ccc + "\t" + var + "\t" + u, "ivfgDfs" + rcVarToInteger.get(curRcVar));
+                    util.writeFilelnWithPrefix("-----" + "\t" + cc + "\t" + ccc + "\t" + var + "\t" + u, "ivfgDfsOnly" + rcVarToInteger.get(curRcVar));
+                }
+                else {
+                    util.writeFilelnWithPrefix("--=--" + "\t" + cc + "\t" + ccc + "\t" + var + "\t" + u, "ivfgDfs" + rcVarToInteger.get(curRcVar));
+                }
+            }
+            else {
+                util.writeFilelnWithPrefix("=====" + "\t" + Main.wpCFG.getMethodOf(u) + "\t" + u, "ivfgDfs" + rcVarToInteger.get(curRcVar));
+            }
+        }
+    }
+
 }
+

@@ -1,6 +1,7 @@
 package com.xrbin.ddpt;
 
 import com.xrbin.ddpt.model.DatabaseManager;
+import com.xrbin.ddpt.model.TypeSystem;
 import com.xrbin.utils.AllJimpleStmts;
 import com.xrbin.utils.util;
 
@@ -16,6 +17,8 @@ import java.util.concurrent.ConcurrentHashMap;
 import org.apache.log4j.PropertyConfigurator;
 import soot.shimple.Shimple;
 
+import static java.lang.Thread.sleep;
+
 
 /**
  * @author xrbin0@163.com
@@ -25,9 +28,12 @@ import soot.shimple.Shimple;
 public class Main extends BodyTransformer {
     public static String mainMethod = "";
     public static HashMap<String, Body> bodys = new HashMap<>();
+    public static HashMap<String, SootMethod> methods = new HashMap<>();
     public static HashSet<String> reachableMethod = new HashSet<>();
+    public static HashSet<String> reachableClass = new HashSet<>();
     public static D_FS_PT ddpt;
     public static CallGraph cg;
+    public static TypeSystem ts;
     public static WholeProgramCFG wpCFG;
     public static IntroValueFlowGraph ivfg;
 
@@ -55,6 +61,16 @@ public class Main extends BodyTransformer {
 
         Main s = new Main();
         s.getClassUnderDir();
+
+        utils.ExternalJar.forEach(j -> {
+            Scene.v().extendSootClassPath(j);
+        });
+
+//        for (String extraClass : utils.ExternalJar) {
+//            System.out.println("Marking class to resolve: " + extraClass);
+//            Scene.v().addBasicClass(extraClass, SootClass.BODIES);
+//        }
+
         Scene.v().loadNecessaryClasses();
 
 //        setApplicationClass();
@@ -62,49 +78,74 @@ public class Main extends BodyTransformer {
 //        PackManager.v().getPack("stp").add(new Transform("stp.Main", s));
 //        PackManager.v().runPacks();
 
+        HashSet<String> noReachMethod = new HashSet<>(reachableMethod);
+
         util.getTime("to shimple - begin");
+        ts = new TypeSystem();
         Set<SootClass> classes = ConcurrentHashMap.<SootClass>newKeySet();
         classes.addAll(Scene.v().getClasses());
+        util.plnR("class.size() = " + classes.size());
         classes.forEach(c -> {
-            if(!c.toString().contains("OutOfMemoryError")) {
+            if (reachableClass.contains(c.toString())) {
+                ts.add(c);
 //                System.out.println(c.toString());
-//                if (c.getMethods() != null) {
                 c.getMethods().forEach(m -> {
-                    try {
-                        if (m.getSource() != null) {
-                            if (!m.hasActiveBody()) {
-                                m.retrieveActiveBody();
-                            }
+                    if (reachableMethod.contains(m.toString())) {
+                        try {
+                            if (m.getSource() != null) {
+                                methods.put(m.toString(), m);
+                                if (!m.hasActiveBody()) {
+                                    m.retrieveActiveBody();
+                                }
 //                            if (m.getSource() != null && m.getSource().getBody(m, "stp") != null) {
 //                                util.getTime(c.getMethods().toString() + "to shimple - 1");
 //                                Body body = m.getSource().getBody(m, "stp");
 //                            util.getTime(c.getMethods().toString() + "to shimple - 1");
-                            Body body = m.getActiveBody();
+                                Body body = m.getActiveBody();
 //                            util.getTime(c.getMethods().toString() + "to shimple - 2");
-                            body = Shimple.v().newBody(body);
+                                body = Shimple.v().newBody(body);
 //                            util.getTime(c.getMethods().toString() + "to shimple - 3");
-                            m.setActiveBody(body); // 2022-07-19 19:48:32 这个可把我害苦了
+                                m.setActiveBody(body); // 2022-07-19 19:48:32 这个可把我害苦了
 //                            util.getTime(c.getMethods().toString() + "to shimple - 4");
-                            if (reachableMethod.contains(body.getMethod().toString())) {
-                                bodys.put(m.getSignature(), body);
-                                if (body.getMethod().toString().contains(Scene.v().getMainClass().toString()) && body.getMethod().isMain()) {
-                                    mainMethod = body.getMethod().toString();
-                                    System.out.println("mainMethod: " + mainMethod);
+                                if (reachableMethod.contains(body.getMethod().toString())) {
+                                    bodys.put(m.getSignature(), body);
+                                    noReachMethod.remove(m.toString());
+                                    if (utils.MAIN) {
+                                        if (c.toString().equals(utils.MAINCLASS)
+                                                && body.getMethod().toString().contains(Scene.v().getMainClass().toString())
+                                                && body.getMethod().isMain()
+                                        ) {
+                                            mainMethod = body.getMethod().toString();
+                                            System.out.println("mainMethod: " + mainMethod);
+                                        }
+                                    }
+                                    else {
+                                        if (body.getMethod().toString().contains(Scene.v().getMainClass().toString()) && body.getMethod().isMain()) {
+                                            mainMethod = body.getMethod().toString();
+                                            System.out.println("mainMethod: " + mainMethod);
+                                        }
+                                    }
                                 }
                             }
-                        }
+                            else {
+//                            System.err.println(m);
+                            }
 //                            util.getTime(c.getMethods().toString() + "to shimple - 5");
 //                            }
-                    } catch (Exception e) {
-                        e.printStackTrace();
-                        System.exit(1);
+                        } catch (Exception e) {
+                            e.printStackTrace();
+                            System.exit(1);
+                        }
                     }
                 });
-//                }
             }
         });
 
-        // fop: methodCount.size() = 18467
+        ts.run();
+        noReachMethod.forEach(m -> {
+            util.writeFilelnWithPrefix(m, "noReachMethod-jieba");
+        });
+
         util.plnR("methodCount.size() = " + bodys.size());
 
         util.getTime("read data - begin");
@@ -138,12 +179,12 @@ public class Main extends BodyTransformer {
 //            }
 //            System.out.println(c.getMethodOf(u));
 //        }
-//        if(true) return;
+//        if (true) return;
 
         ivfg = new IntroValueFlowGraph(wpCFG);
         util.getTime("ivfg - begin");
         ivfg.buildVFG();
-        if(true) return;
+        if (true) return;
 
 //        System.exit(1);
 //        util.getTime("analysis - begin");
@@ -153,37 +194,6 @@ public class Main extends BodyTransformer {
 //        AllJimpleStmts.bodys = bodys;
 //        AllJimpleStmts.reachableMethod = reachableMethod;
 //        AllJimpleStmts.main(new String[0]);
-    }
-
-    @Override
-    protected void internalTransform(Body body,
-                                     String phaseName,
-                                     Map<String, String> options) {
-
-        if (body.getMethod().toString().contains("<com.xrbin.ddptTest.test.test1: void main(java.lang.String[])>") && body.getMethod().toString().contains("test1")) {
-//            utils.writeFileln("---- " + body.getMethod().toString(), StaticData.DEBUGOUTPUTFILE);
-            for (Unit u : body.getUnits()) {
-//                utils.writeFileln("\t---- " + u.toString(), StaticData.DEBUGOUTPUTFILE);
-//                System.out.println(u);
-            }
-        }
-//        for (Unit u : body.getUnits()) {
-//            if(u instanceof AssignStmt && u.toString().contains("null")) {
-//                System.out.println(((AssignStmt) u).getRightOp().getClass());
-//                System.out.println(((AssignStmt) u).getRightOp().getType());
-//            }
-//        }
-//        if (body.getMethod().toString().contains("com.xrbin.ddptTest")) {
-//            System.out.println(body.getMethod());
-//        }
-        if (reachableMethod.contains(body.getMethod().toString())) {
-            bodys.put(body.getMethod().toString(), body);
-            if (body.getMethod().toString().contains(Scene.v().getMainClass().toString()) && body.getMethod().isMain()) {
-                mainMethod = body.getMethod().toString();
-                System.out.println("mainMethod: " + mainMethod);
-            }
-        }
-
     }
 
     private static void setSootClassPath() {
@@ -204,6 +214,19 @@ public class Main extends BodyTransformer {
                 System.err.println("api class: " + clzName + " -- " + e.getMessage());
             }
         }
+
+        utils.ExternalJar.forEach(ej -> {
+            for (String clzName : SourceLocator.v().getClassesUnder(ej)) {
+//            System.err.println("api class: " + clzName);
+//            Scene.v().getSootClass(clzName).setApplicationClass();
+                try {
+                    Scene.v().loadClass(clzName, SootClass.BODIES).setApplicationClass();
+//                System.out.println("api class: " + clzName);
+                } catch (Exception e) {
+                    System.err.println("api class: " + clzName + " -- " + e.getMessage());
+                }
+            }
+        });
     }
 
     private static void setApplicationClass() {
@@ -260,5 +283,48 @@ public class Main extends BodyTransformer {
         } catch (IOException e) {
             e.printStackTrace();
         }
+        try (
+                FileReader reader = new FileReader(utils.DATABASE + "ReachableClass.csv");
+                BufferedReader br = new BufferedReader(reader)
+        ) {
+            String line;
+            while ((line = br.readLine()) != null) {
+//                util.plnB("------ reachableMethod ------" + line);
+                reachableClass.add(line);
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    @Override
+    protected void internalTransform(Body body,
+                                     String phaseName,
+                                     Map<String, String> options) {
+
+        if (body.getMethod().toString().contains("<com.xrbin.ddptTest.test.test1: void main(java.lang.String[])>") && body.getMethod().toString().contains("test1")) {
+//            utils.writeFileln("---- " + body.getMethod().toString(), StaticData.DEBUGOUTPUTFILE);
+            for (Unit u : body.getUnits()) {
+//                utils.writeFileln("\t---- " + u.toString(), StaticData.DEBUGOUTPUTFILE);
+//                System.out.println(u);
+            }
+        }
+//        for (Unit u : body.getUnits()) {
+//            if(u instanceof AssignStmt && u.toString().contains("null")) {
+//                System.out.println(((AssignStmt) u).getRightOp().getClass());
+//                System.out.println(((AssignStmt) u).getRightOp().getType());
+//            }
+//        }
+//        if (body.getMethod().toString().contains("com.xrbin.ddptTest")) {
+//            System.out.println(body.getMethod());
+//        }
+        if (reachableMethod.contains(body.getMethod().toString())) {
+            bodys.put(body.getMethod().toString(), body);
+//            if (body.getMethod().toString().contains(Scene.v().getMainClass().toString()) && body.getMethod().isMain()) {
+//                mainMethod = body.getMethod().toString();
+//                System.out.println("mainMethod: " + mainMethod);
+//            }
+        }
+
     }
 }

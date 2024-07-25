@@ -1039,9 +1039,9 @@ public class D_FS_PT {
                     String var = wpCFG.getMethodOf(u) + "/" + ifr.getBase().toString();
 //                    util.plnG("--buildVFG - fieldUse: " + u + var);
                     if (database.vptInsen.containsKey(var)) {
-                        for (Allocation o : database.vptInsen.get(var)) {
-                            if(utils.isConstantAllocation(o.getO())) continue;
-                            ivfg.dfsStoreWithCg(u, new Field(new CSAllocation(o), ifr.getField().toString()));
+                        for (CSAllocation   o : database.vptInsen.get(var)) {
+                            if(utils.isConstantAllocation(o.getO().getO())) continue;
+                            ivfg.dfsStoreWithCg(u, new Field(o, ifr.getField().toString()));
 //                            ivfg.dfsStoreInter(u, u, new Field(new CSAllocation(o), ifr.getField().toString()));
                         }
                     }

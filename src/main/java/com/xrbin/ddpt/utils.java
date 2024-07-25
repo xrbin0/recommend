@@ -31,12 +31,12 @@ public class utils {
     public final static String VPT = "VarPointsTo.csv";
     public final static String AVPT = "AVPT.csv";
 
-    public static String PATH; //
+    public static boolean MAIN = true; //
     public static String JARPTAH;
     public static String MAINCLASS;
     public static String DATABASE;
 
-    public final static String DOOPWORKPLACE = "/home/xrbin/Desktop/yanniss-doop-r-4.24.10/";
+    public final static String DOOPWORKPLACE = "/home/xrbin/OtherProject/yanniss-doop-r-4.24.10/";
 
     
     public static int DEBUG = 0;
@@ -184,40 +184,36 @@ public class utils {
             System.err.print(e.toString());
         }
 
-        // ./doop -i /home/xrbin/Desktop/Java_Project/DDPT_test/build/libs/cflrHF.jar  -a 2-object-sensitive+heap --generate-jimple --id cflrHF --main com.xrbin.ddptTest.cflrBackAnalysis.cflrHidenField
+        // ./doop -i /home/xrbin/Java_Project/DDPT_test/build/libs/cflrHF.jar  -a 2-object-sensitive+heap --generate-jimple --id cflrHF --main com.xrbin.ddptTest.cflrBackAnalysis.cflrHidenField
         {
 
 //            PATH = utils.DOOPWORKPLACE + "/out/all/";
-//            JARPTAH = "/home/xrbin/Desktop/Java_Project/DDPT_test/build/libs/all.jar";
+//            JARPTAH = "/home/xrbin/Java_Project/DDPT_test/build/libs/all.jar";
 //            MAINCLASS = "com.xrbin.ddptTest.test.test1";
 
 //            PATH = utils.DOOPWORKPLACE + "/out/fop/";
-//            JARPTAH = "/home/xrbin/Desktop/Java_Project/fop/build/fop.jar";
+//            JARPTAH = "/home/xrbin/Java_Project/fop/build/fop.jar";
 //            MAINCLASS = "org.apache.fop.cli.Main";
 
 //            PATH = utils.DOOPWORKPLACE + "/out/jieba/";
-//            JARPTAH = "/home/xrbin/Desktop/Java_Project/jieba-analysis-master/target/jieba-analysis-1.0.3-SNAPSHOT.jar";
+//            JARPTAH = "/home/xrbin/Java_Project/jieba-analysis-master/target/jieba-analysis-1.0.3-SNAPSHOT.jar";
 //            MAINCLASS = "com.qianxinyao.analysis.jieba.keyword.TFIDFAnalyzer";
 
 //            PATH = utils.DOOPWORKPLACE + "/out/cflrHF/";
-//            JARPTAH = "/home/xrbin/Desktop/Java_Project/DDPT_test/build/libs/cflrHF.jar";
+//            JARPTAH = "/home/xrbin/Java_Project/DDPT_test/build/libs/cflrHF.jar";
 //            MAINCLASS = "com.xrbin.ddptTest.cflrHidenField.test1";
 
 //            PATH = utils.DOOPWORKPLACE + "/out/all/";
-//            JARPTAH = "/home/xrbin/Desktop/Java_Project/DDPT_test/build/libs/all.jar";
+//            JARPTAH = "/home/xrbin/Java_Project/DDPT_test/build/libs/all.jar";
 //            MAINCLASS = "com.xrbin.ddptTest.test.test1";
 
 //            PATH = utils.DOOPWORKPLACE + "/out/func20/";
-//            JARPTAH = "/home/xrbin/Desktop/Java_Project/DDPT_test/build/libs/func20.jar";
+//            JARPTAH = "/home/xrbin/Java_Project/DDPT_test/build/libs/func20.jar";
 //            MAINCLASS = "com.xrbin.ddptTest.test.test1";
 
 //            PATH = utils.DOOPWORKPLACE + "/out/clinit/";
-//            JARPTAH = "/home/xrbin/Desktop/Java_Project/DDPT_test/build/libs/clinit.jar";
+//            JARPTAH = "/home/xrbin/Java_Project/DDPT_test/build/libs/clinit.jar";
 //            MAINCLASS = "com.xrbin.ddptTest.test.test1";
-
-
-            DATABASE = PATH + "/database/";
-            DATABASE = PATH + "/facts/";
         }
 
         {
@@ -243,67 +239,69 @@ public class utils {
         }
 
         {
-            ExternalJar.add("/home/xrbin/Desktop/doop-benchmarks/JREs/jre1.8/lib/rt.jar");
-            ExternalJar.add("/home/xrbin/Desktop/doop-benchmarks/JREs/jre1.8/lib/jce.jar");
-            ExternalJar.add("/home/xrbin/Desktop/doop-benchmarks/JREs/jre1.8/lib/jsse.jar");
+            ExternalJar.add("/home/xrbin/doop-benchmarks/JREs/jre1.8/lib/rt.jar");
+            ExternalJar.add("/home/xrbin/doop-benchmarks/JREs/jre1.8/lib/jce.jar");
+            ExternalJar.add("/home/xrbin/doop-benchmarks/JREs/jre1.8/lib/jsse.jar");
 
-            ExternalJar.add("/home/xrbin/Desktop/Java_Project/fop/lib/build/xmlunit-1.2.jar");
-            ExternalJar.add("/home/xrbin/Desktop/Java_Project/fop/lib/build/qdox-1.12.jar");
-            ExternalJar.add("/home/xrbin/Desktop/Java_Project/fop/lib/build/pmd-4.2.5.jar");
-            ExternalJar.add("/home/xrbin/Desktop/Java_Project/fop/lib/build/objenesis-1.0.0.jar");
-            ExternalJar.add("/home/xrbin/Desktop/Java_Project/fop/lib/build/mockito-core-1.8.5.jar");
-            ExternalJar.add("/home/xrbin/Desktop/Java_Project/fop/lib/build/jaxen-1.1.1.jar");
-            ExternalJar.add("/home/xrbin/Desktop/Java_Project/fop/lib/build/hamcrest.core-1.1.0.jar");
-            ExternalJar.add("/home/xrbin/Desktop/Java_Project/fop/lib/build/asm-3.1.jar");
-            ExternalJar.add("/home/xrbin/Desktop/Java_Project/fop/lib/xmlgraphics-commons-1.5.jar");
-            ExternalJar.add("/home/xrbin/Desktop/Java_Project/fop/lib/xml-apis-ext-1.3.04.jar");
-            ExternalJar.add("/home/xrbin/Desktop/Java_Project/fop/lib/xml-apis-1.3.04.jar");
-            ExternalJar.add("/home/xrbin/Desktop/Java_Project/fop/lib/xercesImpl-2.7.1.jar");
-            ExternalJar.add("/home/xrbin/Desktop/Java_Project/fop/lib/xalan-2.7.0.jar");
-            ExternalJar.add("/home/xrbin/Desktop/Java_Project/fop/lib/servlet-2.2.jar");
-            ExternalJar.add("/home/xrbin/Desktop/Java_Project/fop/lib/serializer-2.7.0.jar");
-            ExternalJar.add("/home/xrbin/Desktop/Java_Project/fop/lib/commons-logging-1.0.4.jar");
-            ExternalJar.add("/home/xrbin/Desktop/Java_Project/fop/lib/commons-io-1.3.1.jar");
-            ExternalJar.add("/home/xrbin/Desktop/Java_Project/fop/lib/batik-all-1.7.jar");
-            ExternalJar.add("/home/xrbin/Desktop/Java_Project/fop/lib/avalon-framework-4.2.0.jar");
-            ExternalJar.add("/home/xrbin/Desktop/Java_Project/fop/build/fop.war");
-            ExternalJar.add("/home/xrbin/Desktop/Java_Project/fop/build/fop-hyph.jar");
-            ExternalJar.add("/home/xrbin/Desktop/Java_Project/fop/build/fop-sandbox.jar");
-            ExternalJar.add("/home/xrbin/Desktop/Java_Project/fop/build/fop-transcoder.jar");
-            ExternalJar.add("/home/xrbin/Desktop/Java_Project/fop/build/fop-transcoder-allinone.jar");
-            ExternalJar.add("/home/xrbin/Desktop/Java_Project/apache-ant/ant.jar");
-            ExternalJar.add("/home/xrbin/Desktop/Java_Project/apache-ant/ant-antlr.jar");
-            ExternalJar.add("/home/xrbin/Desktop/Java_Project/apache-ant/ant-apache-bcel.jar");
-            ExternalJar.add("/home/xrbin/Desktop/Java_Project/apache-ant/ant-apache-bsf.jar");
-            ExternalJar.add("/home/xrbin/Desktop/Java_Project/apache-ant/ant-apache-log4j.jar");
-            ExternalJar.add("/home/xrbin/Desktop/Java_Project/apache-ant/ant-apache-oro.jar");
-            ExternalJar.add("/home/xrbin/Desktop/Java_Project/apache-ant/ant-apache-regexp.jar");
-            ExternalJar.add("/home/xrbin/Desktop/Java_Project/apache-ant/ant-apache-resolver.jar");
-            ExternalJar.add("/home/xrbin/Desktop/Java_Project/apache-ant/ant-apache-xalan2.jar");
-            ExternalJar.add("/home/xrbin/Desktop/Java_Project/apache-ant/ant-commons-logging.jar");
-            ExternalJar.add("/home/xrbin/Desktop/Java_Project/apache-ant/ant-commons-net.jar");
-            ExternalJar.add("/home/xrbin/Desktop/Java_Project/apache-ant/ant-imageio.jar");
-            ExternalJar.add("/home/xrbin/Desktop/Java_Project/apache-ant/ant-jai.jar");
-            ExternalJar.add("/home/xrbin/Desktop/Java_Project/apache-ant/ant-javamail.jar");
-            ExternalJar.add("/home/xrbin/Desktop/Java_Project/apache-ant/ant-jdepend.jar");
-            ExternalJar.add("/home/xrbin/Desktop/Java_Project/apache-ant/ant-jmf.jar");
-            ExternalJar.add("/home/xrbin/Desktop/Java_Project/apache-ant/ant-jsch.jar");
-            ExternalJar.add("/home/xrbin/Desktop/Java_Project/apache-ant/ant-junit.jar");
-            ExternalJar.add("/home/xrbin/Desktop/Java_Project/apache-ant/ant-junit4.jar");
-            ExternalJar.add("/home/xrbin/Desktop/Java_Project/apache-ant/ant-junitlauncher.jar");
-            ExternalJar.add("/home/xrbin/Desktop/Java_Project/apache-ant/ant-launcher.jar");
-            ExternalJar.add("/home/xrbin/Desktop/Java_Project/apache-ant/ant-netrexx.jar");
-            ExternalJar.add("/home/xrbin/Desktop/Java_Project/apache-ant/ant-swing.jar");
-            ExternalJar.add("/home/xrbin/Desktop/Java_Project/apache-ant/ant-testutil.jar");
-            ExternalJar.add("/home/xrbin/Desktop/Java_Project/apache-ant/ant-xz.jar");
+//            ExternalJar.add("/home/xrbin/Java_Project/fop/lib/build/xmlunit-1.2.jar");
+//            ExternalJar.add("/home/xrbin/Java_Project/fop/lib/build/qdox-1.12.jar");
+//            ExternalJar.add("/home/xrbin/Java_Project/fop/lib/build/pmd-4.2.5.jar");
+//            ExternalJar.add("/home/xrbin/Java_Project/fop/lib/build/objenesis-1.0.0.jar");
+//            ExternalJar.add("/home/xrbin/Java_Project/fop/lib/build/mockito-core-1.8.5.jar");
+//            ExternalJar.add("/home/xrbin/Java_Project/fop/lib/build/jaxen-1.1.1.jar");
+//            ExternalJar.add("/home/xrbin/Java_Project/fop/lib/build/hamcrest.core-1.1.0.jar");
+//            ExternalJar.add("/home/xrbin/Java_Project/fop/lib/build/asm-3.1.jar");
+//            ExternalJar.add("/home/xrbin/Java_Project/fop/lib/xmlgraphics-commons-1.5.jar");
+//            ExternalJar.add("/home/xrbin/Java_Project/fop/lib/xml-apis-ext-1.3.04.jar");
+//            ExternalJar.add("/home/xrbin/Java_Project/fop/lib/xml-apis-1.3.04.jar");
+//            ExternalJar.add("/home/xrbin/Java_Project/fop/lib/xercesImpl-2.7.1.jar");
+//            ExternalJar.add("/home/xrbin/Java_Project/fop/lib/xalan-2.7.0.jar");
+//            ExternalJar.add("/home/xrbin/Java_Project/fop/lib/servlet-2.2.jar");
+//            ExternalJar.add("/home/xrbin/Java_Project/fop/lib/serializer-2.7.0.jar");
+//            ExternalJar.add("/home/xrbin/Java_Project/fop/lib/commons-logging-1.0.4.jar");
+//            ExternalJar.add("/home/xrbin/Java_Project/fop/lib/commons-io-1.3.1.jar");
+//            ExternalJar.add("/home/xrbin/Java_Project/fop/lib/batik-all-1.7.jar");
+//            ExternalJar.add("/home/xrbin/Java_Project/fop/lib/avalon-framework-4.2.0.jar");
+//            ExternalJar.add("/home/xrbin/Java_Project/fop/build/fop.war");
+//            ExternalJar.add("/home/xrbin/Java_Project/fop/build/fop-hyph.jar");
+//            ExternalJar.add("/home/xrbin/Java_Project/fop/build/fop-sandbox.jar");
+//            ExternalJar.add("/home/xrbin/Java_Project/fop/build/fop-transcoder.jar");
+//            ExternalJar.add("/home/xrbin/Java_Project/fop/build/fop-transcoder-allinone.jar");
+//            ExternalJar.add("/home/xrbin/Java_Project/apache-ant/ant.jar");
+//            ExternalJar.add("/home/xrbin/Java_Project/apache-ant/ant-antlr.jar");
+//            ExternalJar.add("/home/xrbin/Java_Project/apache-ant/ant-apache-bcel.jar");
+//            ExternalJar.add("/home/xrbin/Java_Project/apache-ant/ant-apache-bsf.jar");
+//            ExternalJar.add("/home/xrbin/Java_Project/apache-ant/ant-apache-log4j.jar");
+//            ExternalJar.add("/home/xrbin/Java_Project/apache-ant/ant-apache-oro.jar");
+//            ExternalJar.add("/home/xrbin/Java_Project/apache-ant/ant-apache-regexp.jar");
+//            ExternalJar.add("/home/xrbin/Java_Project/apache-ant/ant-apache-resolver.jar");
+//            ExternalJar.add("/home/xrbin/Java_Project/apache-ant/ant-apache-xalan2.jar");
+//            ExternalJar.add("/home/xrbin/Java_Project/apache-ant/ant-commons-logging.jar");
+//            ExternalJar.add("/home/xrbin/Java_Project/apache-ant/ant-commons-net.jar");
+//            ExternalJar.add("/home/xrbin/Java_Project/apache-ant/ant-imageio.jar");
+//            ExternalJar.add("/home/xrbin/Java_Project/apache-ant/ant-jai.jar");
+//            ExternalJar.add("/home/xrbin/Java_Project/apache-ant/ant-javamail.jar");
+//            ExternalJar.add("/home/xrbin/Java_Project/apache-ant/ant-jdepend.jar");
+//            ExternalJar.add("/home/xrbin/Java_Project/apache-ant/ant-jmf.jar");
+//            ExternalJar.add("/home/xrbin/Java_Project/apache-ant/ant-jsch.jar");
+//            ExternalJar.add("/home/xrbin/Java_Project/apache-ant/ant-junit.jar");
+//            ExternalJar.add("/home/xrbin/Java_Project/apache-ant/ant-junit4.jar");
+//            ExternalJar.add("/home/xrbin/Java_Project/apache-ant/ant-junitlauncher.jar");
+//            ExternalJar.add("/home/xrbin/Java_Project/apache-ant/ant-launcher.jar");
+//            ExternalJar.add("/home/xrbin/Java_Project/apache-ant/ant-netrexx.jar");
+//            ExternalJar.add("/home/xrbin/Java_Project/apache-ant/ant-swing.jar");
+//            ExternalJar.add("/home/xrbin/Java_Project/apache-ant/ant-testutil.jar");
+//            ExternalJar.add("/home/xrbin/Java_Project/apache-ant/ant-xz.jar");
 
-            ExternalJar.add("/home/xrbin/Desktop/DDPT/libs/soot-4.2.1-jar-with-dependencies.jar");
-            ExternalJar.add("/home/xrbin/.m2/repository/javax/annotation/javax.annotation-api/1.3.2/javax.annotation-api-1.3.2.jar");
-            ExternalJar.add("/home/xrbin/.m2/repository/log4j/log4j/1.2.17/log4j-1.2.17.jar");
-            ExternalJar.add("/home/xrbin/.m2/repository/ca/mcgill/sable/polyglot/2006/polyglot-2006.jar");
-            ExternalJar.add("/home/xrbin/.m2/repository/ca/mcgill/sable/jasmin/3.0.2/jasmin-3.0.2.jar");
-            ExternalJar.add("/home/xrbin/.gradle/caches/modules-2/files-2.1/org.slf4j/slf4j-api/1.7.21/139535a69a4239db087de9bab0bee568bf8e0b70/slf4j-api-1.7.21.jar");
-            ExternalJar.add("/home/xrbin/.gradle/caches/modules-2/files-2.1/org.jetbrains/annotations/19.0.0/efbff6752f67a7c9de3e4251c086a88e23591dfd/annotations-19.0.0.jar");
+            ExternalJar.add("/home/xrbin/doop-benchmarks/dacapo-2006/antlr-deps.jar");
+//
+//            ExternalJar.add("/home/xrbin/IdeaProjects/DDPT/libs/soot-4.2.1-jar-with-dependencies.jar");
+//            ExternalJar.add("/home/xrbin/.m2/repository/javax/annotation/javax.annotation-api/1.3.2/javax.annotation-api-1.3.2.jar");
+//            ExternalJar.add("/home/xrbin/.m2/repository/log4j/log4j/1.2.17/log4j-1.2.17.jar");
+//            ExternalJar.add("/home/xrbin/.m2/repository/ca/mcgill/sable/polyglot/2006/polyglot-2006.jar");
+//            ExternalJar.add("/home/xrbin/.m2/repository/ca/mcgill/sable/jasmin/3.0.2/jasmin-3.0.2.jar");
+//            ExternalJar.add("/home/xrbin/.gradle/caches/modules-2/files-2.1/org.slf4j/slf4j-api/1.7.21/139535a69a4239db087de9bab0bee568bf8e0b70/slf4j-api-1.7.21.jar");
+//            ExternalJar.add("/home/xrbin/.gradle/caches/modules-2/files-2.1/org.jetbrains/annotations/19.0.0/efbff6752f67a7c9de3e4251c086a88e23591dfd/annotations-19.0.0.jar");
         }
     }
 }

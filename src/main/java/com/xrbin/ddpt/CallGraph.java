@@ -19,7 +19,8 @@ import soot.util.HashChain;
 
 import java.util.*;
 
- 
+import static com.xrbin.ddpt.utils.MAIN;
+
 
 public class CallGraph {
     private static final Logger logger = LoggerFactory.getLogger(CallGraph.class);
@@ -35,14 +36,20 @@ public class CallGraph {
     protected HashMap<SootMethod, Vector<Field>> methodToField = new HashMap<>();
 
     public void buildCG() {
-
-        init();
-
         Queue<String> worklist = new ArrayDeque<>();
 
         if(utils.CLINIT) bodys.keySet().forEach(key -> { if (bodys.get(key).getMethod().isStaticInitializer()) worklist.offer(key); });
 
-        worklist.offer(mainMethod.toString());
+        if(MAIN) {
+            worklist.offer(mainMethod.toString());
+        }
+        else {
+            bodys.forEach((k, b) -> {
+                if(b.getMethod().getName().equals("main")) {
+                    worklist.offer(b.getMethod().toString());
+                }
+            });
+        }
 
         while (!worklist.isEmpty()) {
             String cur = worklist.poll();
@@ -80,10 +87,6 @@ public class CallGraph {
             });
         }
         System.out.println("CallGraph size = " + cgFlag.size());
-    }
-
-    private void init(){
-        
     }
 
     private static boolean createMethodToFieldUseFlag;
@@ -160,8 +163,8 @@ public class CallGraph {
             if(ifr != null) {
                 String var = Main.wpCFG.getMethodOf(u).toString() + "/" + ifr.getBase().toString();
                 if (database.vptInsen.containsKey(var)) {
-                    for (Allocation o : database.vptInsen.get(var)) {
-                        Field f = new Field(new CSAllocation(o), ifr.getField().toString());
+                    for (CSAllocation o : database.vptInsen.get(var)) {
+                        Field f = new Field(o, ifr.getField().toString());
                         methodToField.get(sm).add(f);
                     }
 //                    if(database.appMethod.contains(sm.toString())) {
@@ -182,10 +185,12 @@ public class CallGraph {
 
     public CallGraph(HashMap<String, Body> bodys, String mainMethod) {
         this.bodys = bodys;
-        try {
-            this.mainMethod = bodys.get(mainMethod).getMethod();
-        } catch (Exception e) {
-            System.err.println(e.toString());
+        if (MAIN) {
+            try {
+                this.mainMethod = bodys.get(mainMethod).getMethod();
+            } catch (Exception e) {
+                System.err.println(e.toString());
+            }
         }
     }
 

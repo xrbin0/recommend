@@ -487,7 +487,7 @@
 //        List<String> list = new ArrayList<>();
 //        try {
 //            Scanner scanner = new Scanner(
-//                    new File("/home/xrbin/Desktop/yanniss-doop-r-4.24.10/out/all-facts-only/converted.dat"));
+//                    new File("/home/xrbin/OtherProjects/yanniss-doop-r-4.24.10/out/all-facts-only/converted.dat"));
 //            while (scanner.hasNextLine()) {
 //                list.add(scanner.nextLine());
 //            }
@@ -508,7 +508,7 @@
 //
 //        List<String> list = new ArrayList<>();
 //        try {
-//            Scanner scanner = new Scanner(new File("/home/xrbin/Desktop/yanniss-doop-r-4.24.10/out/all-facts-only/converted.dat"));
+//            Scanner scanner = new Scanner(new File("/home/xrbin/OtherProjects/yanniss-doop-r-4.24.10/out/all-facts-only/converted.dat"));
 //            while (scanner.hasNextLine()) {
 //                list.add(scanner.nextLine());
 //            }
